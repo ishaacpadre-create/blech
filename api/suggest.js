@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   try {
-    const { budget, travelers, month, duration, city, preferences, tripType, lang, chosenCity, chosenCountry } = req.body;
+    const { budget, travelers, month, duration, city, preferences, tripType, lang } = req.body;
 
     const isFr = lang === 'fr';
     const months = isFr
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const tripTypeName = tripTypes[tripType] || (isFr ? "entre amis" : "with friends");
 
     const prompt = isFr
-      ? `Tu es un expert en voyages. Génère un voyage personnalisé avec ces critères :
+      ? `Tu es un expert en voyages. Propose exactement 3 destinations DIFFÉRENTES (dans des pays différents) pour un voyage avec ces critères :
 - Budget total : ${budget}€
 - Nombre de voyageurs : ${travelers}
 - Mois de départ : ${monthName}
@@ -36,40 +36,26 @@ export default async function handler(req, res) {
 - Ville de départ : ${city || 'Paris'}
 - Type de voyage : ${tripTypeName}
 - Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
-${chosenCity ? `- Destination IMPOSÉE : ${chosenCity}, ${chosenCountry}. Tu DOIS faire le voyage pour cette ville.` : ''}
 
 IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
 {
-  "destination": {
-    "country": "Pays",
-    "city": "Ville",
-    "description": "Description attractive de 2-3 phrases"
-  },
-  "budget": {
-    "flights": nombre,
-    "hotel": nombre,
-    "activities": nombre,
-    "food": nombre,
-    "transport": nombre
-  },
-  "days": [
+  "suggestions": [
     {
-      "title": "Titre du jour",
-      "morning": "Description détaillée du matin avec lieux précis",
-      "afternoon": "Description détaillée de l'après-midi avec lieux précis",
-      "evening": "Description détaillée de la soirée avec lieux précis"
+      "city": "Ville",
+      "country": "Pays",
+      "description": "Description attractive de 2 phrases",
+      "estimatedBudget": nombre,
+      "matchReason": "1 phrase expliquant pourquoi cette destination correspond aux préférences"
     }
-  ],
-  "tips": ["conseil 1", "conseil 2", "conseil 3"]
+  ]
 }
 
 Règles :
-- Le budget total (flights+hotel+activities+food+transport) doit être proche de ${budget}€
-- Propose exactement le bon nombre de jours selon la durée "${durName}"
-- Donne des noms de lieux, restaurants et activités RÉELS et précis
-- Les tips doivent être des conseils pratiques et utiles
-- La destination doit être réaliste pour le budget donné`
-      : `You are a travel expert. Generate a personalized trip with these criteria:
+- Propose exactement 3 destinations dans 3 pays DIFFÉRENTS
+- Chaque estimatedBudget doit être réaliste et proche de ${budget}€
+- Les destinations doivent être réalistes et accessibles depuis ${city || 'Paris'}
+- Varie les styles : une destination classique, une originale, une surprenante`
+      : `You are a travel expert. Propose exactly 3 DIFFERENT destinations (in different countries) for a trip with these criteria:
 - Total budget: ${budget}€
 - Number of travelers: ${travelers}
 - Departure month: ${monthName}
@@ -77,39 +63,25 @@ Règles :
 - Departure city: ${city || 'Paris'}
 - Trip type: ${tripTypeName}
 - Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
-${chosenCity ? `- REQUIRED destination: ${chosenCity}, ${chosenCountry}. You MUST plan the trip for this city.` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
 {
-  "destination": {
-    "country": "Country",
-    "city": "City",
-    "description": "Attractive 2-3 sentence description"
-  },
-  "budget": {
-    "flights": number,
-    "hotel": number,
-    "activities": number,
-    "food": number,
-    "transport": number
-  },
-  "days": [
+  "suggestions": [
     {
-      "title": "Day title",
-      "morning": "Detailed morning description with specific places",
-      "afternoon": "Detailed afternoon description with specific places",
-      "evening": "Detailed evening description with specific places"
+      "city": "City",
+      "country": "Country",
+      "description": "Attractive 2-sentence description",
+      "estimatedBudget": number,
+      "matchReason": "1 sentence explaining why this destination matches the preferences"
     }
-  ],
-  "tips": ["tip 1", "tip 2", "tip 3"]
+  ]
 }
 
 Rules:
-- Total budget (flights+hotel+activities+food+transport) must be close to ${budget}€
-- Propose exactly the right number of days for duration "${durName}"
-- Give REAL and specific place names, restaurants and activities
-- Tips should be practical and useful
-- Destination must be realistic for the given budget`;
+- Propose exactly 3 destinations in 3 DIFFERENT countries
+- Each estimatedBudget must be realistic and close to ${budget}€
+- Destinations must be realistic and accessible from ${city || 'Paris'}
+- Vary the styles: one classic, one original, one surprising`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
@@ -119,8 +91,8 @@ Rules:
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.8,
-            maxOutputTokens: 8192,
+            temperature: 0.9,
+            maxOutputTokens: 2048,
           },
         }),
       }
@@ -136,11 +108,11 @@ Rules:
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-    const trip = JSON.parse(cleaned);
+    const result = JSON.parse(cleaned);
 
-    return res.status(200).json(trip);
+    return res.status(200).json(result);
   } catch (err) {
     console.error('Server error:', err);
-    return res.status(500).json({ error: 'Failed to generate trip' });
+    return res.status(500).json({ error: 'Failed to generate suggestions' });
   }
 }

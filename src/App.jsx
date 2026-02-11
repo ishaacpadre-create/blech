@@ -21,11 +21,18 @@ const T = {
     per: { morning: "Matin", afternoon: "Après-midi", evening: "Soirée" },
     cats: { flights:"Vols", hotel:"Hôtel", activities:"Activités", food:"Repas", transport:"Transport" },
     total: "Total", newTrip: "Nouveau voyage",
-    ld: ["Analyse du budget...","Recherche de la destination idéale...","Construction du programme jour par jour...","Calcul des meilleurs prix...","Finalisation de votre voyage..."],
     tripType: "Type de voyage",
     types: { romantic: "Romantique", friends: "Entre amis", solo: "Solo", familyTrip: "En famille" },
     book: "Réserver", bookFlights: "Vols", bookHotel: "Hôtel", bookActivities: "Activités",
     save: "Sauvegarder", saved: "Sauvegardé !", myTrips: "Mes voyages", noTrips: "Aucun voyage sauvegardé", deleteSaved: "Supprimer",
+    pickTitle: "Choisissez votre destination",
+    pickSub: "Nous avons trouvé 3 destinations parfaites pour vous",
+    pickChoose: "Choisir cette destination",
+    pickBack: "Retour",
+    pickBudget: "Budget estimé",
+    ldSuggest: ["Analyse de vos préférences...","Recherche des meilleures destinations...","Comparaison des options..."],
+    ldItinerary: ["Construction du programme jour par jour...","Calcul des meilleurs prix...","Recherche des activités...","Finalisation de votre voyage..."],
+    errSuggest: "Erreur lors de la recherche de destinations. Réessayez.",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -45,11 +52,18 @@ const T = {
     per: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
     cats: { flights:"Flights", hotel:"Hotel", activities:"Activities", food:"Meals", transport:"Transport" },
     total: "Total", newTrip: "New trip",
-    ld: ["Analyzing budget...","Finding the ideal destination...","Building your day-by-day program...","Calculating best prices...","Finalizing your trip..."],
     tripType: "Trip type",
     types: { romantic: "Romantic", friends: "Friends", solo: "Solo", familyTrip: "Family" },
     book: "Book", bookFlights: "Flights", bookHotel: "Hotel", bookActivities: "Activities",
     save: "Save trip", saved: "Saved!", myTrips: "My trips", noTrips: "No saved trips", deleteSaved: "Delete",
+    pickTitle: "Choose your destination",
+    pickSub: "We found 3 perfect destinations for you",
+    pickChoose: "Choose this destination",
+    pickBack: "Back",
+    pickBudget: "Estimated budget",
+    ldSuggest: ["Analyzing your preferences...","Searching the best destinations...","Comparing options..."],
+    ldItinerary: ["Building your day-by-day program...","Calculating best prices...","Finding activities...","Finalizing your trip..."],
+    errSuggest: "Error finding destinations. Please try again.",
   }
 };
 
@@ -109,7 +123,6 @@ export default function App() {
   const [trav, setTrav] = useState(2);
   const [prefs, setPrefs] = useState([]);
   const [city, setCity] = useState("");
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
   const [ldIdx, setLdIdx] = useState(0);
@@ -121,6 +134,12 @@ export default function App() {
   const [showSaved, setShowSaved] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [coords, setCoords] = useState(null);
+  // Nouveaux états pour le picker de destinations
+  const [suggestions, setSuggestions] = useState(null);
+  const [suggestionImages, setSuggestionImages] = useState({});
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [loadingItinerary, setLoadingItinerary] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
   const t = T[lang];
 
   // Thème clair/sombre
@@ -140,11 +159,14 @@ export default function App() {
     dayBorder: "#F5F5F5", shadow: "0 1px 8px rgba(0,0,0,0.06)",
   };
 
+  // Rotation des messages de chargement
   useEffect(() => {
-    if (!loading) return;
-    const iv = setInterval(() => setLdIdx(i => (i + 1) % t.ld.length), 2500);
+    const isLoading = loadingSuggestions || loadingItinerary;
+    if (!isLoading) return;
+    const msgs = loadingSuggestions ? t.ldSuggest : t.ldItinerary;
+    const iv = setInterval(() => setLdIdx(i => (i + 1) % msgs.length), 2500);
     return () => clearInterval(iv);
-  }, [loading, t.ld.length]);
+  }, [loadingSuggestions, loadingItinerary, t.ldSuggest, t.ldItinerary]);
 
   // Charger une photo de voyage pour le hero
   useEffect(() => {
@@ -158,7 +180,6 @@ export default function App() {
 
   const fetchDestImage = async (city) => {
     try {
-      // Essayer Wikipedia EN puis FR pour trouver une image
       for (const wikiLang of ["en", "fr"]) {
         const res = await fetch(`https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`);
         const data = await res.json();
@@ -174,7 +195,6 @@ export default function App() {
     } catch {
       setDestImage(null);
     }
-    // Récupérer les coordonnées via Nominatim
     try {
       const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
       const geoData = await geoRes.json();
@@ -186,6 +206,22 @@ export default function App() {
     } catch {
       setCoords(null);
     }
+  };
+
+  // Charger les images Wikipedia pour les suggestions
+  const fetchSuggestionImages = async (suggestionsArr) => {
+    const images = {};
+    await Promise.all(suggestionsArr.map(async (s) => {
+      for (const wikiLang of ["en", "fr"]) {
+        try {
+          const res = await fetch(`https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(s.city)}`);
+          const data = await res.json();
+          if (data.originalimage?.source) { images[s.city] = data.originalimage.source; return; }
+          if (data.thumbnail?.source) { images[s.city] = data.thumbnail.source.replace(/\/\d+px-/, '/800px-'); return; }
+        } catch {}
+      }
+    }));
+    setSuggestionImages(images);
   };
 
   // Charger les voyages sauvegardés
@@ -217,16 +253,17 @@ export default function App() {
 
   const toggle = p => setPrefs(v => v.includes(p) ? v.filter(x => x !== p) : [...v, p]);
 
-  const generate = async () => {
+  // Étape 1 : chercher les suggestions de destinations
+  const findSuggestions = async () => {
     setError("");
     if (!budget || +budget < 100) return setError(t.errB);
     if (month === "" || dur === "") return setError(t.errD);
 
-    setLoading(true);
+    setLoadingSuggestions(true);
     setLdIdx(0);
 
     try {
-      const res = await fetch('/api/generate', {
+      const res = await fetch('/api/suggest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -245,18 +282,80 @@ export default function App() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
+      setSuggestions(data.suggestions);
+      fetchSuggestionImages(data.suggestions);
+    } catch (err) {
+      console.error(err);
+      setError(t.errSuggest);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // Étape 2 : générer l'itinéraire pour la destination choisie
+  const selectDestination = async (suggestion) => {
+    setSelectedSuggestion(suggestion);
+    setLoadingItinerary(true);
+    setLdIdx(0);
+    setError("");
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          budget: +budget,
+          travelers: trav,
+          month,
+          duration: dur,
+          city: city || 'Paris',
+          preferences: prefs,
+          tripType,
+          lang,
+          chosenCity: suggestion.city,
+          chosenCountry: suggestion.country,
+        }),
+      });
+
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
       data.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
       setResult(data);
       fetchDestImage(data.destination.city);
     } catch (err) {
       console.error(err);
       setError(t.errApi);
+      setSelectedSuggestion(null);
     } finally {
-      setLoading(false);
+      setLoadingItinerary(false);
     }
   };
 
-  const reset = () => { setResult(null); setDestImage(null); setCoords(null); setJustSaved(false); setBudget(""); setMonth(""); setDur(""); setPrefs([]); setCity(""); setTripType("friends"); };
+  const backToForm = () => {
+    setSuggestions(null);
+    setSuggestionImages({});
+    setSelectedSuggestion(null);
+    setError("");
+  };
+
+  const reset = () => {
+    setResult(null);
+    setSuggestions(null);
+    setSuggestionImages({});
+    setSelectedSuggestion(null);
+    setDestImage(null);
+    setCoords(null);
+    setJustSaved(false);
+    setBudget("");
+    setMonth("");
+    setDur("");
+    setPrefs([]);
+    setCity("");
+    setTripType("friends");
+    setError("");
+  };
 
   const inp = { width: "100%", padding: "12px 14px", background: c.input, border: `2px solid ${c.inputBorder}`, borderRadius: "10px", fontSize: "15px", color: c.text, fontFamily: "inherit" };
   const lbl = { display: "block", marginBottom: "6px", fontSize: "12px", fontWeight: 600, color: c.textSub, textTransform: "uppercase", letterSpacing: "0.5px" };
@@ -271,14 +370,22 @@ export default function App() {
         input, select { font-family: 'Quicksand', sans-serif; }
         input:focus, select:focus { outline: none; border-color: #FF8C42 !important; }
         .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,140,66,0.35); }
+        .pick-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
         @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } }
       `}</style>
 
       {/* LOADING */}
-      {loading && (
+      {(loadingSuggestions || loadingItinerary) && (
         <div style={{ position: "fixed", inset: 0, zIndex: 999, background: c.loadingBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
           <div style={{ width: 40, height: 40, border: "3px solid #EDEDED", borderTop: "3px solid #FF8C42", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <div style={{ fontSize: "15px", color: "#FF8C42", fontWeight: 600, transition: "all 0.3s" }}>{t.ld[ldIdx]}</div>
+          <div style={{ fontSize: "15px", color: "#FF8C42", fontWeight: 600, transition: "all 0.3s" }}>
+            {loadingSuggestions ? t.ldSuggest[ldIdx % t.ldSuggest.length] : t.ldItinerary[ldIdx % t.ldItinerary.length]}
+          </div>
+          {loadingItinerary && selectedSuggestion && (
+            <div style={{ fontSize: "13px", color: c.textSub, fontWeight: 500 }}>
+              {selectedSuggestion.city}, {selectedSuggestion.country}
+            </div>
+          )}
         </div>
       )}
 
@@ -305,114 +412,7 @@ export default function App() {
 
       <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px" }}>
 
-        {!result ? (
-          <div style={{ animation: "fadeUp 0.4s ease" }}>
-
-            {/* HERO */}
-            <div style={{
-              margin: "0 -20px", position: "relative", height: "280px", overflow: "hidden",
-              background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
-            }}>
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)" }} />
-              <div style={{ position: "absolute", bottom: "32px", left: "24px", right: "24px", zIndex: 1 }}>
-                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLECH</h1>
-                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)", fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{t.slogan}</p>
-              </div>
-            </div>
-
-            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", margin: "20px 0 28px", fontWeight: 500 }}>{t.sub}</p>
-
-            {/* FORM */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lbl}>{t.budget}</label>
-                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder={t.budgetPh} style={inp} />
-                </div>
-                <div>
-                  <label style={lbl}>{t.trav}</label>
-                  <select value={trav} onChange={e => setTrav(+e.target.value)} style={{ ...inp, appearance: "none" }}>
-                    {t.trvl.map((l, i) => <option key={i} value={i + 1}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lbl}>{t.month}</label>
-                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? "#2D3436" : "#bbb" }}>
-                    <option value="">—</option>
-                    {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={lbl}>{t.dur}</label>
-                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? "#2D3436" : "#bbb" }}>
-                    <option value="">—</option>
-                    {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={lbl}>{t.city}</label>
-                <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
-              </div>
-
-              {/* PREFS */}
-              <div>
-                <label style={{ ...lbl, marginBottom: "10px" }}>{t.prefs}</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                  {Object.entries(PREF_DATA).map(([k, data]) => {
-                    const sel = prefs.includes(k);
-                    return (
-                      <button key={k} onClick={() => toggle(k)} style={{
-                        position: "relative", borderRadius: "12px", overflow: "hidden",
-                        border: sel ? "3px solid #FF8C42" : "3px solid transparent",
-                        height: "80px", padding: 0, background: data.gradient,
-                        transition: "all 0.2s", display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "center", gap: "4px",
-                        opacity: sel ? 1 : 0.75,
-                      }}>
-                        {sel && <div style={{ position: "absolute", inset: 0, background: "rgba(255,140,66,0.2)" }} />}
-                        <div style={{ position: "relative", zIndex: 1 }}>{data.icon}</div>
-                        <span style={{ position: "relative", zIndex: 1, color: "#fff", fontSize: "11px", fontWeight: 700 }}>{t.p[k]}</span>
-                        {sel && <div style={{ position: "absolute", top: "5px", right: "5px", width: "18px", height: "18px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        </div>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* TYPE DE VOYAGE */}
-              <div>
-                <label style={{ ...lbl, marginBottom: "10px" }}>{t.tripType}</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
-                  {Object.entries(t.types).map(([k, label]) => (
-                    <button key={k} onClick={() => setTripType(k)} style={{
-                      padding: "12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
-                      border: tripType === k ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}`,
-                      background: tripType === k ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input,
-                      color: tripType === k ? "#FF8C42" : c.textMuted,
-                      transition: "all 0.2s",
-                    }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600 }}>{error}</div>}
-
-              <button className="cta" onClick={generate} disabled={loading} style={{
-                width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
-                color: "#fff", fontSize: "16px", fontWeight: 700, transition: "all 0.2s", opacity: loading ? 0.6 : 1,
-              }}>{t.go}</button>
-            </div>
-          </div>
-        ) : (
+        {result ? (
           /* ===== RESULTS ===== */
           <div style={{ animation: "fadeUp 0.5s ease" }}>
 
@@ -421,7 +421,6 @@ export default function App() {
               margin: "0 -20px", position: "relative", height: "320px", overflow: "hidden",
               background: destImage ? `url(${destImage}) center/cover no-repeat` : (result.destination.gradient || DEST_GRADIENTS[0]),
             }}>
-              {/* Overlay sombre pour lisibilité du texte */}
               <div style={{ position: "absolute", inset: 0, background: destImage ? "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%)" : "none" }} />
               <div style={{ position: "absolute", bottom: "24px", left: "24px", right: "24px", zIndex: 1 }}>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "2px", color: "rgba(255,255,255,0.7)", marginBottom: "6px", fontWeight: 700 }}>{t.dest}</div>
@@ -553,6 +552,186 @@ export default function App() {
               width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
               color: "#fff", fontSize: "15px", fontWeight: 700, transition: "all 0.2s",
             }}>{t.newTrip}</button>
+          </div>
+
+        ) : suggestions ? (
+          /* ===== DESTINATION PICKER ===== */
+          <div style={{ animation: "fadeUp 0.4s ease", paddingTop: "24px" }}>
+
+            {/* Bouton retour */}
+            <button onClick={backToForm} style={{
+              background: "none", border: "none", color: c.textMuted, fontSize: "14px", fontWeight: 600,
+              display: "flex", alignItems: "center", gap: "6px", marginBottom: "20px", padding: 0,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><polyline points="12 19 5 12 12 5"/></svg>
+              {t.pickBack}
+            </button>
+
+            {/* Titre */}
+            <h2 style={{ fontSize: "24px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "8px" }}>{t.pickTitle}</h2>
+            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", marginBottom: "28px", fontWeight: 500 }}>{t.pickSub}</p>
+
+            {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, marginBottom: "20px" }}>{error}</div>}
+
+            {/* Cartes de destination */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {suggestions.map((s, i) => (
+                <div key={i} className="pick-card" style={{
+                  background: c.card, borderRadius: "16px", overflow: "hidden", boxShadow: c.shadow,
+                  animation: `fadeUp 0.4s ease ${i * 0.12}s both`, transition: "all 0.3s",
+                }}>
+                  {/* Image */}
+                  <div style={{
+                    position: "relative", height: "180px", overflow: "hidden",
+                    background: suggestionImages[s.city] ? `url(${suggestionImages[s.city]}) center/cover no-repeat` : DEST_GRADIENTS[i % DEST_GRADIENTS.length],
+                  }}>
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 50%)" }} />
+                    {/* Ville / Pays */}
+                    <div style={{ position: "absolute", bottom: "14px", left: "16px", zIndex: 1 }}>
+                      <div style={{ fontSize: "20px", fontWeight: 700, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.4)" }}>
+                        {s.city}, {s.country}
+                      </div>
+                    </div>
+                    {/* Badge budget */}
+                    <div style={{
+                      position: "absolute", bottom: "16px", right: "16px", zIndex: 1,
+                      background: "rgba(255,140,66,0.9)", borderRadius: "20px", padding: "4px 12px",
+                    }}>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#fff" }}>{s.estimatedBudget}€</span>
+                    </div>
+                  </div>
+
+                  {/* Contenu */}
+                  <div style={{ padding: "16px 20px" }}>
+                    <p style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7, marginBottom: "8px" }}>{s.description}</p>
+                    {s.matchReason && (
+                      <p style={{ fontSize: "12px", color: "#FF8C42", fontWeight: 600, marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF8C42" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        {s.matchReason}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Bouton choisir */}
+                  <button onClick={() => selectDestination(s)} style={{
+                    width: "100%", padding: "14px", border: "none", borderTop: `1px solid ${c.inputBorder}`,
+                    background: "transparent", color: "#FF8C42", fontSize: "14px", fontWeight: 700,
+                    transition: "background 0.2s",
+                  }}>
+                    {t.pickChoose}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        ) : (
+          /* ===== FORM ===== */
+          <div style={{ animation: "fadeUp 0.4s ease" }}>
+
+            {/* HERO */}
+            <div style={{
+              margin: "0 -20px", position: "relative", height: "280px", overflow: "hidden",
+              background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
+            }}>
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)" }} />
+              <div style={{ position: "absolute", bottom: "32px", left: "24px", right: "24px", zIndex: 1 }}>
+                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLECH</h1>
+                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)", fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{t.slogan}</p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", margin: "20px 0 28px", fontWeight: 500 }}>{t.sub}</p>
+
+            {/* FORM */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={lbl}>{t.budget}</label>
+                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder={t.budgetPh} style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>{t.trav}</label>
+                  <select value={trav} onChange={e => setTrav(+e.target.value)} style={{ ...inp, appearance: "none" }}>
+                    {t.trvl.map((l, i) => <option key={i} value={i + 1}>{l}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={lbl}>{t.month}</label>
+                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? "#2D3436" : "#bbb" }}>
+                    <option value="">—</option>
+                    {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>{t.dur}</label>
+                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? "#2D3436" : "#bbb" }}>
+                    <option value="">—</option>
+                    {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={lbl}>{t.city}</label>
+                <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
+              </div>
+
+              {/* PREFS */}
+              <div>
+                <label style={{ ...lbl, marginBottom: "10px" }}>{t.prefs}</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {Object.entries(PREF_DATA).map(([k, data]) => {
+                    const sel = prefs.includes(k);
+                    return (
+                      <button key={k} onClick={() => toggle(k)} style={{
+                        position: "relative", borderRadius: "12px", overflow: "hidden",
+                        border: sel ? "3px solid #FF8C42" : "3px solid transparent",
+                        height: "80px", padding: 0, background: data.gradient,
+                        transition: "all 0.2s", display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center", gap: "4px",
+                        opacity: sel ? 1 : 0.75,
+                      }}>
+                        {sel && <div style={{ position: "absolute", inset: 0, background: "rgba(255,140,66,0.2)" }} />}
+                        <div style={{ position: "relative", zIndex: 1 }}>{data.icon}</div>
+                        <span style={{ position: "relative", zIndex: 1, color: "#fff", fontSize: "11px", fontWeight: 700 }}>{t.p[k]}</span>
+                        {sel && <div style={{ position: "absolute", top: "5px", right: "5px", width: "18px", height: "18px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* TYPE DE VOYAGE */}
+              <div>
+                <label style={{ ...lbl, marginBottom: "10px" }}>{t.tripType}</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+                  {Object.entries(t.types).map(([k, label]) => (
+                    <button key={k} onClick={() => setTripType(k)} style={{
+                      padding: "12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
+                      border: tripType === k ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}`,
+                      background: tripType === k ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input,
+                      color: tripType === k ? "#FF8C42" : c.textMuted,
+                      transition: "all 0.2s",
+                    }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600 }}>{error}</div>}
+
+              <button className="cta" onClick={findSuggestions} disabled={loadingSuggestions} style={{
+                width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
+                color: "#fff", fontSize: "16px", fontWeight: 700, transition: "all 0.2s", opacity: loadingSuggestions ? 0.6 : 1,
+              }}>{t.go}</button>
+            </div>
           </div>
         )}
       </main>
