@@ -1,0 +1,611 @@
+import { useState, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+
+const T = {
+  fr: {
+    slogan: "Votre prochain voyage commence ici",
+    sub: "Donnez votre budget, l'IA trouve la destination parfaite.",
+    budget: "Budget (€)", budgetPh: "1500",
+    month: "Mois", dur: "Durée",
+    months: ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
+    durs: ["Week-end","1 semaine","10 jours","2 semaines","3 semaines","1 mois"],
+    trav: "Voyageurs", trvl: ["1","2","3","4","5+"],
+    city: "Départ de", cityPh: "Paris",
+    prefs: "Vos envies",
+    p: { beach:"Plage", culture:"Culture", adventure:"Aventure", gastro:"Gastro", nightlife:"Soirées", family:"Famille" },
+    go: "Trouver mon voyage",
+    errB: "Entrez un budget (min 100€)", errD: "Choisissez un mois et une durée",
+    errApi: "Erreur lors de la génération. Réessayez.",
+    sw: "EN", dest: "Votre destination", prog: "Le programme", tips: "Nos conseils",
+    per: { morning: "Matin", afternoon: "Après-midi", evening: "Soirée" },
+    cats: { flights:"Vols", hotel:"Hôtel", activities:"Activités", food:"Repas", transport:"Transport" },
+    total: "Total", newTrip: "Nouveau voyage",
+    ld: ["Analyse du budget...","Recherche de la destination idéale...","Construction du programme jour par jour...","Calcul des meilleurs prix...","Finalisation de votre voyage..."],
+    tripType: "Type de voyage",
+    types: { romantic: "Romantique", friends: "Entre amis", solo: "Solo", familyTrip: "En famille" },
+    book: "Réserver", bookFlights: "Vols", bookHotel: "Hôtel", bookActivities: "Activités",
+    save: "Sauvegarder", saved: "Sauvegardé !", myTrips: "Mes voyages", noTrips: "Aucun voyage sauvegardé", deleteSaved: "Supprimer",
+  },
+  en: {
+    slogan: "Your next trip starts here",
+    sub: "Give us your budget, AI finds the perfect destination.",
+    budget: "Budget (€)", budgetPh: "1500",
+    month: "Month", dur: "Duration",
+    months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+    durs: ["Weekend","1 week","10 days","2 weeks","3 weeks","1 month"],
+    trav: "Travelers", trvl: ["1","2","3","4","5+"],
+    city: "From", cityPh: "Paris",
+    prefs: "Your interests",
+    p: { beach:"Beach", culture:"Culture", adventure:"Adventure", gastro:"Food", nightlife:"Nightlife", family:"Family" },
+    go: "Find my trip",
+    errB: "Enter a budget (min 100€)", errD: "Select month and duration",
+    errApi: "Error generating trip. Please try again.",
+    sw: "FR", dest: "Your destination", prog: "The program", tips: "Our tips",
+    per: { morning: "Morning", afternoon: "Afternoon", evening: "Evening" },
+    cats: { flights:"Flights", hotel:"Hotel", activities:"Activities", food:"Meals", transport:"Transport" },
+    total: "Total", newTrip: "New trip",
+    ld: ["Analyzing budget...","Finding the ideal destination...","Building your day-by-day program...","Calculating best prices...","Finalizing your trip..."],
+    tripType: "Trip type",
+    types: { romantic: "Romantic", friends: "Friends", solo: "Solo", familyTrip: "Family" },
+    book: "Book", bookFlights: "Flights", bookHotel: "Hotel", bookActivities: "Activities",
+    save: "Save trip", saved: "Saved!", myTrips: "My trips", noTrips: "No saved trips", deleteSaved: "Delete",
+  }
+};
+
+const PREF_DATA = {
+  beach: { gradient: "linear-gradient(135deg, #43CEA2, #185A9D)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"/><path d="M2 20h20"/><path d="M5 12c1.5-1 3.5-1 5 0s3.5 1 5 0 3.5-1 5 0"/><path d="M5 16c1.5-1 3.5-1 5 0s3.5 1 5 0 3.5-1 5 0"/></svg>
+  )},
+  culture: { gradient: "linear-gradient(135deg, #8E2DE2, #4A00E0)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-4h6v4"/><path d="M9 10h1"/><path d="M14 10h1"/><path d="M9 14h1"/><path d="M14 14h1"/></svg>
+  )},
+  adventure: { gradient: "linear-gradient(135deg, #11998E, #38EF7D)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3l4 8 5-5 2 15H2L8 3z"/></svg>
+  )},
+  gastro: { gradient: "linear-gradient(135deg, #F7971E, #FFD200)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+  )},
+  nightlife: { gradient: "linear-gradient(135deg, #0F2027, #2C5364)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  )},
+  family: { gradient: "linear-gradient(135deg, #FC5C7D, #6A82FB)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="2"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M21 21v-2a3 3 0 0 0-3-3h-1"/></svg>
+  )},
+};
+
+const BCOLORS = { flights:"#FF8C42", hotel:"#3EC1D3", activities:"#FF6B6B", food:"#A88BEB", transport:"#54C7A0" };
+const CAT_ICONS = {
+  flights: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>,
+  hotel: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-4h6v4"/></svg>,
+  activities: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>,
+  food: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>,
+  transport: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+};
+
+const DEST_GRADIENTS = [
+  "linear-gradient(135deg, #E8A87C 0%, #D4756B 40%, #8B5E83 100%)",
+  "linear-gradient(135deg, #43CEA2 0%, #185A9D 100%)",
+  "linear-gradient(135deg, #F7971E 0%, #FFD200 100%)",
+  "linear-gradient(135deg, #FC5C7D 0%, #6A82FB 100%)",
+  "linear-gradient(135deg, #11998E 0%, #38EF7D 100%)",
+];
+
+const HERO_GRADIENT = "linear-gradient(135deg, #FF8C42 0%, #E8637C 50%, #8B5CF6 100%)";
+
+// Fix icône Leaflet par défaut
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+export default function App() {
+  const [lang, setLang] = useState("fr");
+  const [budget, setBudget] = useState("");
+  const [month, setMonth] = useState("");
+  const [dur, setDur] = useState("");
+  const [trav, setTrav] = useState(2);
+  const [prefs, setPrefs] = useState([]);
+  const [city, setCity] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const [ldIdx, setLdIdx] = useState(0);
+  const [destImage, setDestImage] = useState(null);
+  const [isDark, setIsDark] = useState(false);
+  const [heroImage, setHeroImage] = useState(null);
+  const [tripType, setTripType] = useState("friends");
+  const [savedTrips, setSavedTrips] = useState([]);
+  const [showSaved, setShowSaved] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+  const [coords, setCoords] = useState(null);
+  const t = T[lang];
+
+  // Thème clair/sombre
+  const c = isDark ? {
+    bg: "#121212", card: "#1E1E1E", input: "#2A2A2A", inputBorder: "#3A3A3A",
+    text: "#E0E0E0", textSub: "#999", textMuted: "#777",
+    header: "#1A1A1A", headerBorder: "#2A2A2A",
+    tipsBg: "#1A2F25", tipsBorder: "#2A4A35", tipsText: "#4ADE80",
+    errorBg: "#3A1515", loadingBg: "rgba(18,18,18,0.97)",
+    dayBorder: "#2A2A2A", shadow: "0 1px 8px rgba(0,0,0,0.3)",
+  } : {
+    bg: "#FAFAFA", card: "#fff", input: "#fff", inputBorder: "#EDEDED",
+    text: "#2D3436", textSub: "#888", textMuted: "#666",
+    header: "#fff", headerBorder: "#F0F0F0",
+    tipsBg: "#F0FAF5", tipsBorder: "#D4EDDF", tipsText: "#2EAD7A",
+    errorBg: "#FFF0F0", loadingBg: "rgba(250,250,250,0.97)",
+    dayBorder: "#F5F5F5", shadow: "0 1px 8px rgba(0,0,0,0.06)",
+  };
+
+  useEffect(() => {
+    if (!loading) return;
+    const iv = setInterval(() => setLdIdx(i => (i + 1) % t.ld.length), 2500);
+    return () => clearInterval(iv);
+  }, [loading, t.ld.length]);
+
+  // Charger une photo de voyage pour le hero
+  useEffect(() => {
+    const places = ["Santorini", "Bali", "Kyoto", "Amalfi_Coast", "Maldives", "Swiss_Alps", "Machu_Picchu"];
+    const pick = places[Math.floor(Math.random() * places.length)];
+    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${pick}`)
+      .then(r => r.json())
+      .then(d => { if (d.originalimage?.source) setHeroImage(d.originalimage.source); })
+      .catch(() => {});
+  }, []);
+
+  const fetchDestImage = async (city) => {
+    try {
+      // Essayer Wikipedia EN puis FR pour trouver une image
+      for (const wikiLang of ["en", "fr"]) {
+        const res = await fetch(`https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(city)}`);
+        const data = await res.json();
+        if (data.originalimage?.source) {
+          setDestImage(data.originalimage.source);
+          break;
+        }
+        if (data.thumbnail?.source) {
+          setDestImage(data.thumbnail.source.replace(/\/\d+px-/, '/800px-'));
+          break;
+        }
+      }
+    } catch {
+      setDestImage(null);
+    }
+    // Récupérer les coordonnées via Nominatim
+    try {
+      const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
+      const geoData = await geoRes.json();
+      if (geoData.length > 0) {
+        setCoords([parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)]);
+      } else {
+        setCoords(null);
+      }
+    } catch {
+      setCoords(null);
+    }
+  };
+
+  // Charger les voyages sauvegardés
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('blech_trips') || '[]');
+    setSavedTrips(saved);
+  }, []);
+
+  const saveTrip = () => {
+    const trip = { id: Date.now(), city: result.destination.city, country: result.destination.country, data: result, image: destImage };
+    const updated = [...savedTrips, trip];
+    localStorage.setItem('blech_trips', JSON.stringify(updated));
+    setSavedTrips(updated);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
+  };
+
+  const deleteSavedTrip = (id) => {
+    const updated = savedTrips.filter(t => t.id !== id);
+    localStorage.setItem('blech_trips', JSON.stringify(updated));
+    setSavedTrips(updated);
+  };
+
+  const loadTrip = (trip) => {
+    setResult(trip.data);
+    setDestImage(trip.image);
+    setShowSaved(false);
+  };
+
+  const toggle = p => setPrefs(v => v.includes(p) ? v.filter(x => x !== p) : [...v, p]);
+
+  const generate = async () => {
+    setError("");
+    if (!budget || +budget < 100) return setError(t.errB);
+    if (month === "" || dur === "") return setError(t.errD);
+
+    setLoading(true);
+    setLdIdx(0);
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          budget: +budget,
+          travelers: trav,
+          month,
+          duration: dur,
+          city: city || 'Paris',
+          preferences: prefs,
+          tripType,
+          lang,
+        }),
+      });
+
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      data.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
+      setResult(data);
+      fetchDestImage(data.destination.city);
+    } catch (err) {
+      console.error(err);
+      setError(t.errApi);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => { setResult(null); setDestImage(null); setCoords(null); setJustSaved(false); setBudget(""); setMonth(""); setDur(""); setPrefs([]); setCity(""); setTripType("friends"); };
+
+  const inp = { width: "100%", padding: "12px 14px", background: c.input, border: `2px solid ${c.inputBorder}`, borderRadius: "10px", fontSize: "15px", color: c.text, fontFamily: "inherit" };
+  const lbl = { display: "block", marginBottom: "6px", fontSize: "12px", fontWeight: 600, color: c.textSub, textTransform: "uppercase", letterSpacing: "0.5px" };
+
+  return (
+    <div style={{ minHeight: "100vh", background: c.bg, fontFamily: "'Quicksand', system-ui, sans-serif", color: c.text, transition: "background 0.3s, color 0.3s" }}>
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        button { cursor: pointer; font-family: 'Quicksand', sans-serif; }
+        input, select { font-family: 'Quicksand', sans-serif; }
+        input:focus, select:focus { outline: none; border-color: #FF8C42 !important; }
+        .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,140,66,0.35); }
+        @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } }
+      `}</style>
+
+      {/* LOADING */}
+      {loading && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: c.loadingBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid #EDEDED", borderTop: "3px solid #FF8C42", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <div style={{ fontSize: "15px", color: "#FF8C42", fontWeight: 600, transition: "all 0.3s" }}>{t.ld[ldIdx]}</div>
+        </div>
+      )}
+
+      {/* HEADER */}
+      <header style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: c.header, borderBottom: `1px solid ${c.headerBorder}`, transition: "background 0.3s" }}>
+        <span style={{ fontSize: "22px", fontWeight: 700, color: "#FF8C42", letterSpacing: "-0.5px" }}>BLECH</span>
+        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          {savedTrips.length > 0 && (
+            <button onClick={() => setShowSaved(!showSaved)} style={{ background: isDark ? "#333" : "#F5F5F5", border: "none", borderRadius: "20px", padding: "6px 12px", color: "#FF8C42", fontSize: "12px", fontWeight: 700, position: "relative" }}>
+              {t.myTrips}
+              <span style={{ position: "absolute", top: "-4px", right: "-4px", width: "18px", height: "18px", borderRadius: "50%", background: "#FF8C42", color: "#fff", fontSize: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{savedTrips.length}</span>
+            </button>
+          )}
+          <button onClick={() => setIsDark(!isDark)} style={{ background: isDark ? "#333" : "#F5F5F5", border: "none", borderRadius: "50%", width: "34px", height: "34px", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.3s" }}>
+            {isDark ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            )}
+          </button>
+          <button onClick={() => setLang(lang === "fr" ? "en" : "fr")} style={{ background: isDark ? "#333" : "#F5F5F5", border: "none", borderRadius: "20px", padding: "6px 16px", color: c.textMuted, fontSize: "13px", fontWeight: 700 }}>{t.sw}</button>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px" }}>
+
+        {!result ? (
+          <div style={{ animation: "fadeUp 0.4s ease" }}>
+
+            {/* HERO */}
+            <div style={{
+              margin: "0 -20px", position: "relative", height: "280px", overflow: "hidden",
+              background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
+            }}>
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)" }} />
+              <div style={{ position: "absolute", bottom: "32px", left: "24px", right: "24px", zIndex: 1 }}>
+                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLECH</h1>
+                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)", fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{t.slogan}</p>
+              </div>
+            </div>
+
+            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", margin: "20px 0 28px", fontWeight: 500 }}>{t.sub}</p>
+
+            {/* FORM */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={lbl}>{t.budget}</label>
+                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder={t.budgetPh} style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>{t.trav}</label>
+                  <select value={trav} onChange={e => setTrav(+e.target.value)} style={{ ...inp, appearance: "none" }}>
+                    {t.trvl.map((l, i) => <option key={i} value={i + 1}>{l}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div>
+                  <label style={lbl}>{t.month}</label>
+                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? "#2D3436" : "#bbb" }}>
+                    <option value="">—</option>
+                    {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>{t.dur}</label>
+                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? "#2D3436" : "#bbb" }}>
+                    <option value="">—</option>
+                    {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={lbl}>{t.city}</label>
+                <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
+              </div>
+
+              {/* PREFS */}
+              <div>
+                <label style={{ ...lbl, marginBottom: "10px" }}>{t.prefs}</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  {Object.entries(PREF_DATA).map(([k, data]) => {
+                    const sel = prefs.includes(k);
+                    return (
+                      <button key={k} onClick={() => toggle(k)} style={{
+                        position: "relative", borderRadius: "12px", overflow: "hidden",
+                        border: sel ? "3px solid #FF8C42" : "3px solid transparent",
+                        height: "80px", padding: 0, background: data.gradient,
+                        transition: "all 0.2s", display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "center", gap: "4px",
+                        opacity: sel ? 1 : 0.75,
+                      }}>
+                        {sel && <div style={{ position: "absolute", inset: 0, background: "rgba(255,140,66,0.2)" }} />}
+                        <div style={{ position: "relative", zIndex: 1 }}>{data.icon}</div>
+                        <span style={{ position: "relative", zIndex: 1, color: "#fff", fontSize: "11px", fontWeight: 700 }}>{t.p[k]}</span>
+                        {sel && <div style={{ position: "absolute", top: "5px", right: "5px", width: "18px", height: "18px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* TYPE DE VOYAGE */}
+              <div>
+                <label style={{ ...lbl, marginBottom: "10px" }}>{t.tripType}</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+                  {Object.entries(t.types).map(([k, label]) => (
+                    <button key={k} onClick={() => setTripType(k)} style={{
+                      padding: "12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
+                      border: tripType === k ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}`,
+                      background: tripType === k ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input,
+                      color: tripType === k ? "#FF8C42" : c.textMuted,
+                      transition: "all 0.2s",
+                    }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600 }}>{error}</div>}
+
+              <button className="cta" onClick={generate} disabled={loading} style={{
+                width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
+                color: "#fff", fontSize: "16px", fontWeight: 700, transition: "all 0.2s", opacity: loading ? 0.6 : 1,
+              }}>{t.go}</button>
+            </div>
+          </div>
+        ) : (
+          /* ===== RESULTS ===== */
+          <div style={{ animation: "fadeUp 0.5s ease" }}>
+
+            {/* DESTINATION HERO */}
+            <div style={{
+              margin: "0 -20px", position: "relative", height: "320px", overflow: "hidden",
+              background: destImage ? `url(${destImage}) center/cover no-repeat` : (result.destination.gradient || DEST_GRADIENTS[0]),
+            }}>
+              {/* Overlay sombre pour lisibilité du texte */}
+              <div style={{ position: "absolute", inset: 0, background: destImage ? "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%)" : "none" }} />
+              <div style={{ position: "absolute", bottom: "24px", left: "24px", right: "24px", zIndex: 1 }}>
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "2px", color: "rgba(255,255,255,0.7)", marginBottom: "6px", fontWeight: 700 }}>{t.dest}</div>
+                <h2 style={{ fontSize: "32px", fontWeight: 700, color: "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
+                  {result.destination.city}, {result.destination.country}
+                </h2>
+              </div>
+            </div>
+
+            <p style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7, margin: "24px 0 20px", textAlign: "center" }}>{result.destination.description}</p>
+
+            {/* MINI CARTE */}
+            {coords && (
+              <div style={{ borderRadius: "16px", overflow: "hidden", marginBottom: "32px", boxShadow: c.shadow, height: "220px" }}>
+                <MapContainer center={coords} zoom={10} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false} dragging={false} zoomControl={false}>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker position={coords}>
+                    <Popup>{result.destination.city}, {result.destination.country}</Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            )}
+
+            {/* BUDGET */}
+            <div style={{ background: c.card, borderRadius: "16px", padding: "24px", boxShadow: c.shadow, marginBottom: "32px", transition: "background 0.3s" }}>
+              {(() => {
+                const entries = Object.entries(t.cats);
+                const total = entries.reduce((s, [k]) => s + (result.budget?.[k] || 0), 0);
+                return <>
+                  <div style={{ display: "flex", borderRadius: "8px", overflow: "hidden", height: "22px", marginBottom: "18px" }}>
+                    {entries.map(([k]) => {
+                      const pct = total > 0 ? ((result.budget?.[k] || 0) / total) * 100 : 0;
+                      return pct > 0 ? <div key={k} style={{ width: `${pct}%`, background: BCOLORS[k], fontSize: "9px", fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{pct > 10 ? Math.round(pct) + "%" : ""}</div> : null;
+                    })}
+                  </div>
+                  {entries.map(([k, label]) => (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: "8px", background: BCOLORS[k], display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
+                          {CAT_ICONS[k]}
+                        </div>
+                        <span style={{ fontSize: "13px", color: c.textMuted }}>{label}</span>
+                      </div>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: c.text }}>{result.budget?.[k] || 0}€</span>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: `1px solid ${c.inputBorder}`, paddingTop: "10px", marginTop: "10px", display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontWeight: 700, color: "#FF8C42", fontSize: "14px" }}>{t.total}</span>
+                    <span style={{ fontWeight: 700, color: "#FF8C42", fontSize: "18px" }}>{total}€</span>
+                  </div>
+                </>;
+              })()}
+            </div>
+
+            {/* BOOKING LINKS */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
+              {[
+                { key: "bookFlights", icon: CAT_ICONS.flights, color: BCOLORS.flights, url: `https://www.skyscanner.fr/transport/vols/${encodeURIComponent(city || 'Paris')}/${encodeURIComponent(result.destination.city)}/` },
+                { key: "bookHotel", icon: CAT_ICONS.hotel, color: BCOLORS.hotel, url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(result.destination.city + ', ' + result.destination.country)}` },
+                { key: "bookActivities", icon: CAT_ICONS.activities, color: BCOLORS.activities, url: `https://www.getyourguide.fr/s/?q=${encodeURIComponent(result.destination.city)}` },
+              ].map(({ key, icon, color, url }) => (
+                <a key={key} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1, minWidth: "100px" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                    padding: "12px", borderRadius: "12px", background: color, color: "#fff",
+                    fontSize: "13px", fontWeight: 700, transition: "transform 0.2s",
+                  }}>
+                    {icon}
+                    {t[key]}
+                  </div>
+                </a>
+              ))}
+            </div>
+
+            {/* SAVE TRIP */}
+            <button onClick={saveTrip} disabled={justSaved} style={{
+              width: "100%", padding: "14px", marginBottom: "32px", borderRadius: "12px",
+              border: `2px solid ${justSaved ? c.tipsText : "#FF8C42"}`,
+              background: justSaved ? c.tipsBg : "transparent",
+              color: justSaved ? c.tipsText : "#FF8C42",
+              fontSize: "14px", fontWeight: 700, transition: "all 0.3s",
+            }}>
+              {justSaved ? (
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  {t.saved}
+                </span>
+              ) : t.save}
+            </button>
+
+            {/* PROGRAMME */}
+            <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: c.text }}>{t.prog}</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
+              {result.days?.map((day, i) => (
+                <div key={i} style={{ background: c.card, borderRadius: "16px", overflow: "hidden", boxShadow: c.shadow, animation: `fadeUp 0.3s ease ${i * 0.1}s both`, transition: "background 0.3s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "18px 20px", borderBottom: `1px solid ${c.dayBorder}` }}>
+                    <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", color: "#fff", flexShrink: 0 }}>{i + 1}</div>
+                    <div style={{ fontWeight: 700, fontSize: "16px", color: c.text }}>{day.title}</div>
+                  </div>
+                  <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                    {["morning", "afternoon", "evening"].map(p => day[p] ? (
+                      <div key={p} style={{ paddingLeft: "14px", borderLeft: `3px solid ${p === "morning" ? "#FFD4A8" : p === "afternoon" ? "#FF8C42" : "#D4756B"}` }}>
+                        <div style={{ fontSize: "11px", fontWeight: 700, color: p === "morning" ? "#C49A5C" : p === "afternoon" ? "#FF8C42" : "#D4756B", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.per[p]}</div>
+                        <div style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7 }}>{day[p]}</div>
+                      </div>
+                    ) : null)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* TIPS */}
+            {result.tips?.length > 0 && (
+              <div style={{ background: c.tipsBg, borderRadius: "16px", padding: "20px", marginBottom: "32px", border: `1px solid ${c.tipsBorder}`, transition: "background 0.3s" }}>
+                <h3 style={{ fontSize: "14px", color: c.tipsText, marginBottom: "14px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.tips}</h3>
+                {result.tips.map((tip, i) => (
+                  <div key={i} style={{ display: "flex", gap: "10px", fontSize: "14px", color: c.textMuted, lineHeight: 1.7, marginBottom: "10px" }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: c.tipsText, flexShrink: 0, marginTop: "8px" }} />
+                    <span>{tip}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button className="cta" onClick={reset} style={{
+              width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
+              color: "#fff", fontSize: "15px", fontWeight: 700, transition: "all 0.2s",
+            }}>{t.newTrip}</button>
+          </div>
+        )}
+      </main>
+
+      {/* MODAL MES VOYAGES */}
+      {showSaved && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setShowSaved(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: "100%", maxWidth: "580px", maxHeight: "70vh", background: c.card, borderRadius: "20px 20px 0 0",
+            padding: "24px", overflowY: "auto", animation: "fadeUp 0.3s ease", transition: "background 0.3s",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: c.text }}>{t.myTrips}</h3>
+              <button onClick={() => setShowSaved(false)} style={{ background: "none", border: "none", fontSize: "22px", color: c.textMuted, padding: "4px" }}>✕</button>
+            </div>
+            {savedTrips.length === 0 ? (
+              <p style={{ textAlign: "center", color: c.textSub, fontSize: "14px", padding: "40px 0" }}>{t.noTrips}</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {savedTrips.map(trip => (
+                  <div key={trip.id} style={{
+                    display: "flex", alignItems: "center", gap: "14px", padding: "14px",
+                    background: isDark ? "#2A2A2A" : "#F8F8F8", borderRadius: "14px", transition: "background 0.3s",
+                  }}>
+                    <div style={{
+                      width: "56px", height: "56px", borderRadius: "12px", flexShrink: 0, overflow: "hidden",
+                      background: trip.image ? `url(${trip.image}) center/cover no-repeat` : DEST_GRADIENTS[0],
+                    }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "15px", color: c.text }}>{trip.city}</div>
+                      <div style={{ fontSize: "12px", color: c.textSub }}>{trip.country}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+                      <button onClick={() => loadTrip(trip)} style={{
+                        padding: "8px 14px", borderRadius: "8px", border: "none",
+                        background: "#FF8C42", color: "#fff", fontSize: "12px", fontWeight: 700,
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </button>
+                      <button onClick={() => deleteSavedTrip(trip.id)} style={{
+                        padding: "8px 14px", borderRadius: "8px", border: "none",
+                        background: isDark ? "#3A1515" : "#FFE8E8", color: "#E55", fontSize: "12px", fontWeight: 700,
+                      }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: "middle" }}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
