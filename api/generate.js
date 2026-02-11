@@ -133,7 +133,9 @@ Rules:
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Gemini 2.5 peut renvoyer plusieurs parts (thinking + réponse), prendre la dernière part texte
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const text = parts.filter(p => p.text).map(p => p.text).pop() || '';
 
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const trip = JSON.parse(cleaned);

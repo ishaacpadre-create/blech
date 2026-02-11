@@ -105,14 +105,21 @@ Rules:
     }
 
     const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    // Gemini 2.5 peut renvoyer plusieurs parts (thinking + réponse), prendre la dernière part texte
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const text = parts.filter(p => p.text).map(p => p.text).pop() || '';
+
+    if (!text) {
+      console.error('Empty response from Gemini:', JSON.stringify(data).slice(0, 500));
+      return res.status(500).json({ error: 'Empty AI response' });
+    }
 
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const result = JSON.parse(cleaned);
 
     return res.status(200).json(result);
   } catch (err) {
-    console.error('Server error:', err);
+    console.error('Server error:', err.message || err);
     return res.status(500).json({ error: 'Failed to generate suggestions' });
   }
 }
