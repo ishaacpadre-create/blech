@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   try {
-    const { budget, travelers, month, duration, city, preferences, tripType, lang } = req.body;
+    const { budget, travelers, month, duration, city, preferences, tripType, lang, exactDate, customNotes } = req.body;
 
     const isFr = lang === 'fr';
     const months = isFr
@@ -23,8 +23,8 @@ export default async function handler(req, res) {
     const durName = durs[parseInt(duration)] || duration;
 
     const tripTypes = isFr
-      ? { romantic: "romantique (en couple)", friends: "entre amis", solo: "solo", familyTrip: "en famille" }
-      : { romantic: "romantic (couple)", friends: "with friends", solo: "solo", familyTrip: "family" };
+      ? { romantic: "romantique (en couple)", friends: "entre amis", solo: "solo", familyTrip: "en famille", roadtrip: "parcours / road trip" }
+      : { romantic: "romantic (couple)", friends: "with friends", solo: "solo", familyTrip: "family", roadtrip: "road trip" };
     const tripTypeName = tripTypes[tripType] || (isFr ? "entre amis" : "with friends");
 
     const prompt = isFr
@@ -36,6 +36,8 @@ export default async function handler(req, res) {
 - Ville de départ : ${city || 'Paris'}
 - Type de voyage : ${tripTypeName}
 - Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
+${exactDate ? `- Date exacte de départ : ${exactDate}` : ''}
+${customNotes ? `- Demandes spéciales : ${customNotes}` : ''}
 
 IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
 {
@@ -45,7 +47,8 @@ IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans
       "country": "Pays",
       "description": "Description attractive de 2 phrases",
       "estimatedBudget": nombre,
-      "matchReason": "1 phrase expliquant pourquoi cette destination correspond aux préférences"
+      "matchReason": "1 phrase expliquant pourquoi cette destination correspond aux préférences",
+      "suggestedDates": "dates idéales suggérées (ex: du 15 au 22 mars)"
     }
   ]
 }
@@ -54,7 +57,9 @@ Règles :
 - Propose exactement 3 destinations dans 3 pays DIFFÉRENTS
 - Chaque estimatedBudget doit être réaliste et proche de ${budget}€
 - Les destinations doivent être réalistes et accessibles depuis ${city || 'Paris'}
-- Varie les styles : une destination classique, une originale, une surprenante`
+- Varie les styles : une destination classique, une originale, une surprenante
+${tripType === 'roadtrip' ? '- Type road trip : propose des parcours avec plusieurs étapes/villes' : ''}
+- Pour suggestedDates : ${exactDate ? 'utilise la date exacte fournie' : 'propose les meilleures dates dans le mois indiqué'}`
       : `You are a travel expert. Propose exactly 3 DIFFERENT destinations (in different countries) for a trip with these criteria:
 - Total budget: ${budget}€
 - Number of travelers: ${travelers}
@@ -63,6 +68,8 @@ Règles :
 - Departure city: ${city || 'Paris'}
 - Trip type: ${tripTypeName}
 - Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
+${exactDate ? `- Exact departure date: ${exactDate}` : ''}
+${customNotes ? `- Special requests: ${customNotes}` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
 {
@@ -72,7 +79,8 @@ IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. 
       "country": "Country",
       "description": "Attractive 2-sentence description",
       "estimatedBudget": number,
-      "matchReason": "1 sentence explaining why this destination matches the preferences"
+      "matchReason": "1 sentence explaining why this destination matches the preferences",
+      "suggestedDates": "suggested ideal dates (e.g. March 15-22)"
     }
   ]
 }
@@ -81,7 +89,9 @@ Rules:
 - Propose exactly 3 destinations in 3 DIFFERENT countries
 - Each estimatedBudget must be realistic and close to ${budget}€
 - Destinations must be realistic and accessible from ${city || 'Paris'}
-- Vary the styles: one classic, one original, one surprising`;
+- Vary the styles: one classic, one original, one surprising
+${tripType === 'roadtrip' ? '- Road trip type: suggest routes with multiple stops/cities' : ''}
+- For suggestedDates: ${exactDate ? 'use the exact date provided' : 'suggest the best dates within the indicated month'}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,

@@ -13,7 +13,8 @@ const T = {
     trav: "Voyageurs", trvl: ["1","2","3","4","5+"],
     city: "Départ de", cityPh: "Paris",
     prefs: "Vos envies",
-    p: { beach:"Plage", culture:"Culture", adventure:"Aventure", gastro:"Gastro", nightlife:"Soirées", family:"Famille" },
+    p: { beach:"Plage", culture:"Culture", adventure:"Aventure", gastro:"Gastro", nightlife:"Soirées", family:"Famille", ski:"Ski", clubbing:"Clubbing", wellness:"Bien-être", shopping:"Shopping" },
+    otherPref: "Autre",
     go: "Trouver mon voyage",
     errB: "Entrez un budget (min 100€)", errD: "Choisissez un mois et une durée",
     errApi: "Erreur lors de la génération. Réessayez.",
@@ -22,7 +23,7 @@ const T = {
     cats: { flights:"Vols", hotel:"Hôtel", activities:"Activités", food:"Repas", transport:"Transport" },
     total: "Total", newTrip: "Nouveau voyage",
     tripType: "Type de voyage",
-    types: { romantic: "Romantique", friends: "Entre amis", solo: "Solo", familyTrip: "En famille" },
+    types: { romantic: "Romantique", friends: "Entre amis", solo: "Solo", familyTrip: "En famille", roadtrip: "Parcours / Road trip" },
     book: "Réserver", bookFlights: "Vols", bookHotel: "Hôtel", bookActivities: "Activités",
     save: "Sauvegarder", saved: "Sauvegardé !", myTrips: "Mes voyages", noTrips: "Aucun voyage sauvegardé", deleteSaved: "Supprimer",
     pickTitle: "Choisissez votre destination",
@@ -33,6 +34,9 @@ const T = {
     ldSuggest: ["Analyse de vos préférences...","Recherche des meilleures destinations...","Comparaison des options..."],
     ldItinerary: ["Construction du programme jour par jour...","Calcul des meilleurs prix...","Recherche des activités...","Finalisation de votre voyage..."],
     errSuggest: "Erreur lors de la recherche de destinations. Réessayez.",
+    exactDate: "Date exacte (optionnel)", exactDatePh: "JJ/MM/AAAA",
+    customNotes: "Demandes spéciales", customNotesPh: "Ex: hôtel avec piscine, activités pour enfants, éviter les longs trajets...",
+    otherPrefPh: "Précisez vos envies...",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -44,7 +48,8 @@ const T = {
     trav: "Travelers", trvl: ["1","2","3","4","5+"],
     city: "From", cityPh: "Paris",
     prefs: "Your interests",
-    p: { beach:"Beach", culture:"Culture", adventure:"Adventure", gastro:"Food", nightlife:"Nightlife", family:"Family" },
+    p: { beach:"Beach", culture:"Culture", adventure:"Adventure", gastro:"Food", nightlife:"Nightlife", family:"Family", ski:"Ski", clubbing:"Clubbing", wellness:"Wellness", shopping:"Shopping" },
+    otherPref: "Other",
     go: "Find my trip",
     errB: "Enter a budget (min 100€)", errD: "Select month and duration",
     errApi: "Error generating trip. Please try again.",
@@ -53,7 +58,7 @@ const T = {
     cats: { flights:"Flights", hotel:"Hotel", activities:"Activities", food:"Meals", transport:"Transport" },
     total: "Total", newTrip: "New trip",
     tripType: "Trip type",
-    types: { romantic: "Romantic", friends: "Friends", solo: "Solo", familyTrip: "Family" },
+    types: { romantic: "Romantic", friends: "Friends", solo: "Solo", familyTrip: "Family", roadtrip: "Road trip" },
     book: "Book", bookFlights: "Flights", bookHotel: "Hotel", bookActivities: "Activities",
     save: "Save trip", saved: "Saved!", myTrips: "My trips", noTrips: "No saved trips", deleteSaved: "Delete",
     pickTitle: "Choose your destination",
@@ -64,6 +69,9 @@ const T = {
     ldSuggest: ["Analyzing your preferences...","Searching the best destinations...","Comparing options..."],
     ldItinerary: ["Building your day-by-day program...","Calculating best prices...","Finding activities...","Finalizing your trip..."],
     errSuggest: "Error finding destinations. Please try again.",
+    exactDate: "Exact date (optional)", exactDatePh: "DD/MM/YYYY",
+    customNotes: "Special requests", customNotesPh: "E.g.: hotel with pool, kid-friendly activities, avoid long drives...",
+    otherPrefPh: "Specify your interests...",
   }
 };
 
@@ -85,6 +93,18 @@ const PREF_DATA = {
   )},
   family: { gradient: "linear-gradient(135deg, #FC5C7D, #6A82FB)", icon: (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="2"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M21 21v-2a3 3 0 0 0-3-3h-1"/></svg>
+  )},
+  ski: { gradient: "linear-gradient(135deg, #E0EAFC, #667DB6)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3l4 8 5-5 2 15H2L8 3z"/><path d="M3 20l18-4"/></svg>
+  )},
+  clubbing: { gradient: "linear-gradient(135deg, #7B1FA2, #E040FB)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  )},
+  wellness: { gradient: "linear-gradient(135deg, #56ab2f, #a8e063)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+  )},
+  shopping: { gradient: "linear-gradient(135deg, #f7971e, #ffd200)", icon: (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
   )},
 };
 
@@ -140,6 +160,9 @@ export default function App() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [loadingItinerary, setLoadingItinerary] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const [otherPrefText, setOtherPrefText] = useState("");
+  const [exactDate, setExactDate] = useState("");
+  const [customNotes, setCustomNotes] = useState("");
   const t = T[lang];
 
   // Thème clair/sombre
@@ -226,14 +249,14 @@ export default function App() {
 
   // Charger les voyages sauvegardés
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('blech_trips') || '[]');
+    const saved = JSON.parse(localStorage.getItem('bleesh_trips') || '[]');
     setSavedTrips(saved);
   }, []);
 
   const saveTrip = () => {
     const trip = { id: Date.now(), city: result.destination.city, country: result.destination.country, data: result, image: destImage };
     const updated = [...savedTrips, trip];
-    localStorage.setItem('blech_trips', JSON.stringify(updated));
+    localStorage.setItem('bleesh_trips', JSON.stringify(updated));
     setSavedTrips(updated);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
@@ -241,7 +264,7 @@ export default function App() {
 
   const deleteSavedTrip = (id) => {
     const updated = savedTrips.filter(t => t.id !== id);
-    localStorage.setItem('blech_trips', JSON.stringify(updated));
+    localStorage.setItem('bleesh_trips', JSON.stringify(updated));
     setSavedTrips(updated);
   };
 
@@ -272,9 +295,11 @@ export default function App() {
           month,
           duration: dur,
           city: city || 'Paris',
-          preferences: prefs,
+          preferences: [...prefs, ...(otherPrefText ? [otherPrefText] : [])],
           tripType,
           lang,
+          exactDate,
+          customNotes,
         }),
       });
 
@@ -309,9 +334,11 @@ export default function App() {
           month,
           duration: dur,
           city: city || 'Paris',
-          preferences: prefs,
+          preferences: [...prefs, ...(otherPrefText ? [otherPrefText] : [])],
           tripType,
           lang,
+          exactDate,
+          customNotes,
           chosenCity: suggestion.city,
           chosenCountry: suggestion.country,
         }),
@@ -354,6 +381,9 @@ export default function App() {
     setPrefs([]);
     setCity("");
     setTripType("friends");
+    setOtherPrefText("");
+    setExactDate("");
+    setCustomNotes("");
     setError("");
   };
 
@@ -391,7 +421,7 @@ export default function App() {
 
       {/* HEADER */}
       <header style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: c.header, borderBottom: `1px solid ${c.headerBorder}`, transition: "background 0.3s" }}>
-        <span style={{ fontSize: "22px", fontWeight: 700, color: "#FF8C42", letterSpacing: "-0.5px" }}>BLECH</span>
+        <span style={{ fontSize: "22px", fontWeight: 700, color: "#FF8C42", letterSpacing: "-0.5px" }}>BLEESH</span>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {savedTrips.length > 0 && (
             <button onClick={() => setShowSaved(!showSaved)} style={{ background: isDark ? "#333" : "#F5F5F5", border: "none", borderRadius: "20px", padding: "6px 12px", color: "#FF8C42", fontSize: "12px", fontWeight: 700, position: "relative" }}>
@@ -430,7 +460,13 @@ export default function App() {
               </div>
             </div>
 
-            <p style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7, margin: "24px 0 20px", textAlign: "center" }}>{result.destination.description}</p>
+            <p style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7, margin: "24px 0 8px", textAlign: "center" }}>{result.destination.description}</p>
+            {result.suggestedDates && (
+              <p style={{ fontSize: "13px", color: "#FF8C42", fontWeight: 600, textAlign: "center", marginBottom: "20px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                {result.suggestedDates}
+              </p>
+            )}
 
             {/* MINI CARTE */}
             {coords && (
@@ -604,6 +640,12 @@ export default function App() {
                   {/* Contenu */}
                   <div style={{ padding: "16px 20px" }}>
                     <p style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7, marginBottom: "8px" }}>{s.description}</p>
+                    {s.suggestedDates && (
+                      <p style={{ fontSize: "12px", color: c.textSub, fontWeight: 600, marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        {s.suggestedDates}
+                      </p>
+                    )}
                     {s.matchReason && (
                       <p style={{ fontSize: "12px", color: "#FF8C42", fontWeight: 600, marginBottom: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF8C42" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -636,12 +678,12 @@ export default function App() {
             }}>
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)" }} />
               <div style={{ position: "absolute", bottom: "32px", left: "24px", right: "24px", zIndex: 1 }}>
-                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLECH</h1>
+                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLEESH</h1>
                 <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)", fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{t.slogan}</p>
               </div>
             </div>
 
-            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", margin: "20px 0 28px", fontWeight: 500 }}>{t.sub}</p>
+            <div style={{ height: "24px" }} />
 
             {/* FORM */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -676,6 +718,11 @@ export default function App() {
               </div>
 
               <div>
+                <label style={lbl}>{t.exactDate}</label>
+                <input type="date" value={exactDate} onChange={e => setExactDate(e.target.value)} style={{ ...inp, color: exactDate ? c.text : "#bbb" }} />
+              </div>
+
+              <div>
                 <label style={lbl}>{t.city}</label>
                 <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
               </div>
@@ -705,6 +752,16 @@ export default function App() {
                     );
                   })}
                 </div>
+                {/* Bouton "Autre" */}
+                <div style={{ marginTop: "8px" }}>
+                  <input
+                    type="text"
+                    value={otherPrefText}
+                    onChange={e => setOtherPrefText(e.target.value)}
+                    placeholder={t.otherPrefPh}
+                    style={{ ...inp, background: otherPrefText ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input, border: otherPrefText ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}` }}
+                  />
+                </div>
               </div>
 
               {/* TYPE DE VOYAGE */}
@@ -723,6 +780,18 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* NOTES PERSONNALISÉES */}
+              <div>
+                <label style={lbl}>{t.customNotes}</label>
+                <textarea
+                  value={customNotes}
+                  onChange={e => setCustomNotes(e.target.value)}
+                  placeholder={t.customNotesPh}
+                  rows={3}
+                  style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
+                />
               </div>
 
               {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600 }}>{error}</div>}
