@@ -27,8 +27,65 @@ export default async function handler(req, res) {
       : { romantic: "romantic (couple)", friends: "with friends", solo: "solo", familyTrip: "family", roadtrip: "road trip" };
     const tripTypeName = tripTypes[tripType] || (isFr ? "entre amis" : "with friends");
 
+    const isRoadtrip = tripType === 'roadtrip';
+
     const prompt = isFr
-      ? `Tu es un expert en voyages. Génère un voyage personnalisé avec ces critères :
+      ? (isRoadtrip
+        ? `Tu es un expert en voyages. Génère un ROAD TRIP / CIRCUIT multi-villes avec ces critères :
+- Budget total : ${budget}€
+- Nombre de voyageurs : ${travelers}
+- Mois de départ : ${monthName}
+- Durée : ${durName}
+- Ville de départ : ${city || 'Paris'}
+- Type de voyage : road trip / circuit
+- Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
+${exactDate ? `- Date exacte de départ : ${exactDate}` : ''}
+${customNotes ? `- Demandes spéciales : ${customNotes}` : ''}
+${chosenCity ? `- Région/pays de départ du road trip : ${chosenCity}, ${chosenCountry}. Le circuit doit commencer dans cette zone.` : ''}
+
+IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
+{
+  "destination": {
+    "country": "Pays ou Région",
+    "city": "${chosenCity || 'Ville de départ du circuit'}",
+    "description": "Description attractive du circuit en 2-3 phrases"
+  },
+  "stages": [
+    {
+      "city": "Nom de la ville-étape",
+      "country": "Pays",
+      "nights": 2,
+      "description": "Ce qu'on fait dans cette étape en 1-2 phrases",
+      "days": [
+        {
+          "title": "Titre du jour",
+          "morning": "Description détaillée du matin avec lieux précis",
+          "afternoon": "Description détaillée de l'après-midi avec lieux précis",
+          "evening": "Description détaillée de la soirée avec lieux précis"
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "flights": nombre,
+    "hotel": nombre,
+    "activities": nombre,
+    "food": nombre,
+    "transport": nombre
+  },
+  "tips": ["conseil 1", "conseil 2", "conseil 3"],
+  "suggestedDates": "dates suggérées (ex: du 15 au 22 mars 2025)"
+}
+
+Règles :
+- Propose 3 à 6 étapes (villes différentes) formant un circuit logique et géographiquement cohérent
+- Le budget total doit être proche de ${budget}€
+- Chaque étape a ses propres jours détaillés
+- Inclus les trajets entre étapes dans les descriptions
+- Donne des noms de lieux, restaurants et activités RÉELS
+- Le total des jours doit correspondre à la durée "${durName}"
+${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "suggestedDates"'}`
+        : `Tu es un expert en voyages. Génère un voyage personnalisé avec ces critères :
 - Budget total : ${budget}€
 - Nombre de voyageurs : ${travelers}
 - Mois de départ : ${monthName}
@@ -72,9 +129,63 @@ Règles :
 - Donne des noms de lieux, restaurants et activités RÉELS et précis
 - Les tips doivent être des conseils pratiques et utiles
 - La destination doit être réaliste pour le budget donné
-${tripType === 'roadtrip' ? '- Type road trip : organise un PARCOURS avec plusieurs étapes/villes différentes chaque jour' : ''}
-${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "suggestedDates"'}`
-      : `You are a travel expert. Generate a personalized trip with these criteria:
+${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "suggestedDates"'}`)
+      : (isRoadtrip
+        ? `You are a travel expert. Generate a multi-city ROAD TRIP / CIRCUIT with these criteria:
+- Total budget: ${budget}€
+- Number of travelers: ${travelers}
+- Departure month: ${monthName}
+- Duration: ${durName}
+- Departure city: ${city || 'Paris'}
+- Trip type: road trip / circuit
+- Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
+${exactDate ? `- Exact departure date: ${exactDate}` : ''}
+${customNotes ? `- Special requests: ${customNotes}` : ''}
+${chosenCity ? `- Road trip starting region/country: ${chosenCity}, ${chosenCountry}. The circuit should start in this area.` : ''}
+
+IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
+{
+  "destination": {
+    "country": "Country or Region",
+    "city": "${chosenCity || 'Circuit starting city'}",
+    "description": "Attractive 2-3 sentence description of the circuit"
+  },
+  "stages": [
+    {
+      "city": "Stage city name",
+      "country": "Country",
+      "nights": 2,
+      "description": "What to do at this stage in 1-2 sentences",
+      "days": [
+        {
+          "title": "Day title",
+          "morning": "Detailed morning description with specific places",
+          "afternoon": "Detailed afternoon description with specific places",
+          "evening": "Detailed evening description with specific places"
+        }
+      ]
+    }
+  ],
+  "budget": {
+    "flights": number,
+    "hotel": number,
+    "activities": number,
+    "food": number,
+    "transport": number
+  },
+  "tips": ["tip 1", "tip 2", "tip 3"],
+  "suggestedDates": "suggested dates (e.g. March 15-22, 2025)"
+}
+
+Rules:
+- Propose 3 to 6 stages (different cities) forming a logical and geographically coherent circuit
+- Total budget must be close to ${budget}€
+- Each stage has its own detailed days
+- Include travel between stages in descriptions
+- Give REAL and specific place names, restaurants and activities
+- Total days must match the duration "${durName}"
+${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`
+        : `You are a travel expert. Generate a personalized trip with these criteria:
 - Total budget: ${budget}€
 - Number of travelers: ${travelers}
 - Departure month: ${monthName}
@@ -118,8 +229,7 @@ Rules:
 - Give REAL and specific place names, restaurants and activities
 - Tips should be practical and useful
 - Destination must be realistic for the given budget
-${tripType === 'roadtrip' ? '- Road trip type: organize a ROUTE with multiple stops/different cities each day' : ''}
-${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`;
+${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`);
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,

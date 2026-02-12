@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useState, useEffect, useRef } from "react";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import L from "leaflet";
 
 const T = {
@@ -37,6 +39,11 @@ const T = {
     exactDate: "Date exacte (optionnel)", exactDatePh: "JJ/MM/AAAA",
     customNotes: "Demandes spéciales", customNotesPh: "Ex: hôtel avec piscine, activités pour enfants, éviter les longs trajets...",
     otherPrefPh: "Précisez vos envies...",
+    steps: ["Critères", "Destinations", "Itinéraire"],
+    exportPdf: "Exporter PDF", share: "Partager", copied: "Lien copié !",
+    weatherTitle: "Météo", avgTemp: "Temp. moyenne", rainfall: "Précipitations",
+    compare: "Comparer", vsTitle: "Comparaison", closeCompare: "Fermer",
+    stage: "Étape", stageNights: "nuit(s)", routeTitle: "Le circuit",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -72,6 +79,11 @@ const T = {
     exactDate: "Exact date (optional)", exactDatePh: "DD/MM/YYYY",
     customNotes: "Special requests", customNotesPh: "E.g.: hotel with pool, kid-friendly activities, avoid long drives...",
     otherPrefPh: "Specify your interests...",
+    steps: ["Criteria", "Destinations", "Itinerary"],
+    exportPdf: "Export PDF", share: "Share", copied: "Link copied!",
+    weatherTitle: "Weather", avgTemp: "Avg. temp.", rainfall: "Rainfall",
+    compare: "Compare", vsTitle: "Comparison", closeCompare: "Close",
+    stage: "Stage", stageNights: "night(s)", routeTitle: "The route",
   }
 };
 
@@ -163,6 +175,13 @@ export default function App() {
   const [otherPrefText, setOtherPrefText] = useState("");
   const [exactDate, setExactDate] = useState("");
   const [customNotes, setCustomNotes] = useState("");
+  const [weather, setWeather] = useState(null);
+  const [comparing, setComparing] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [stageCoords, setStageCoords] = useState([]);
+  const [stageImages, setStageImages] = useState({});
+  const resultRef = useRef(null);
   const t = T[lang];
 
   // Thème clair/sombre
@@ -222,13 +241,61 @@ export default function App() {
       const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`);
       const geoData = await geoRes.json();
       if (geoData.length > 0) {
-        setCoords([parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)]);
+        const lat = parseFloat(geoData[0].lat);
+        const lon = parseFloat(geoData[0].lon);
+        setCoords([lat, lon]);
+        // Fetch weather
+        try {
+          const m = parseInt(month) + 1;
+          const yr = new Date().getFullYear();
+          const startD = `${yr}-${String(m).padStart(2,'0')}-01`;
+          const endD = `${yr}-${String(m).padStart(2,'0')}-28`;
+          const wRes = await fetch(`https://climate-api.open-meteo.com/v1/climate?latitude=${lat}&longitude=${lon}&start_date=${startD}&end_date=${endD}&models=EC_Earth3P_HR&daily=temperature_2m_mean,precipitation_sum`);
+          const wData = await wRes.json();
+          if (wData.daily) {
+            const temps = wData.daily.temperature_2m_mean || [];
+            const precips = wData.daily.precipitation_sum || [];
+            const avgTemp = temps.length ? (temps.reduce((a,b) => a+b, 0) / temps.length).toFixed(1) : null;
+            const totalPrecip = precips.length ? precips.reduce((a,b) => a+b, 0).toFixed(0) : null;
+            setWeather({ temp: avgTemp, precip: totalPrecip });
+          }
+        } catch { setWeather(null); }
       } else {
         setCoords(null);
       }
     } catch {
       setCoords(null);
     }
+  };
+
+  // Charger images + coords pour les étapes d'un road trip
+  const fetchStageData = async (stages) => {
+    const coords = [];
+    const images = {};
+    await Promise.all(stages.map(async (stage, idx) => {
+      // Image Wikipedia
+      for (const wikiLang of ["en", "fr"]) {
+        try {
+          const res = await fetch(`https://${wikiLang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(stage.city)}`);
+          const data = await res.json();
+          if (data.originalimage?.source) { images[stage.city] = data.originalimage.source; break; }
+          if (data.thumbnail?.source) { images[stage.city] = data.thumbnail.source.replace(/\/\d+px-/, '/800px-'); break; }
+        } catch {}
+      }
+      // Geocoding
+      try {
+        const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(stage.city + ', ' + stage.country)}&format=json&limit=1`);
+        const geoData = await geoRes.json();
+        if (geoData.length > 0) {
+          coords[idx] = [parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)];
+        }
+      } catch {}
+    }));
+    setStageImages(images);
+    setStageCoords(coords.filter(Boolean));
+    // Set main image and coords to first stage
+    if (!destImage && Object.values(images)[0]) setDestImage(Object.values(images)[0]);
+    if (coords[0]) setCoords(coords[0]);
   };
 
   // Charger les images Wikipedia pour les suggestions
@@ -350,7 +417,11 @@ export default function App() {
 
       data.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
       setResult(data);
-      fetchDestImage(data.destination.city);
+      if (data.stages && data.stages.length > 0) {
+        fetchStageData(data.stages);
+      } else {
+        fetchDestImage(data.destination.city);
+      }
     } catch (err) {
       console.error(err);
       setError(t.errApi);
@@ -384,8 +455,58 @@ export default function App() {
     setOtherPrefText("");
     setExactDate("");
     setCustomNotes("");
+    setWeather(null);
+    setComparing([]);
+    setShowCompare(false);
+    setStageCoords([]);
+    setStageImages({});
     setError("");
   };
+
+  // Export PDF
+  const exportPDF = async () => {
+    if (!resultRef.current) return;
+    try {
+      const canvas = await html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: isDark ? "#121212" : "#FAFAFA" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const w = pdf.internal.pageSize.getWidth();
+      const h = (canvas.height * w) / canvas.width;
+      let pos = 0;
+      const pageH = pdf.internal.pageSize.getHeight();
+      while (pos < h) {
+        if (pos > 0) pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, -pos, w, h);
+        pos += pageH;
+      }
+      pdf.save(`BLEESH-${result.destination.city}.pdf`);
+    } catch (err) { console.error("PDF export error:", err); }
+  };
+
+  // Share
+  const shareTrip = async () => {
+    const text = `${result.destination.city}, ${result.destination.country} - BLEESH`;
+    if (navigator.share) {
+      try { await navigator.share({ title: "BLEESH", text, url: window.location.href }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
+  // Compare toggle
+  const toggleCompare = (s) => {
+    setComparing(prev => {
+      const exists = prev.find(x => x.city === s.city);
+      if (exists) return prev.filter(x => x.city !== s.city);
+      if (prev.length >= 2) return [prev[1], s];
+      return [...prev, s];
+    });
+  };
+
+  // Step actuel
+  const currentStep = result ? 2 : suggestions ? 1 : 0;
 
   const inp = { width: "100%", padding: "12px 14px", background: c.input, border: `2px solid ${c.inputBorder}`, borderRadius: "10px", fontSize: "15px", color: c.text, fontFamily: "inherit" };
   const lbl = { display: "block", marginBottom: "6px", fontSize: "12px", fontWeight: 600, color: c.textSub, textTransform: "uppercase", letterSpacing: "0.5px" };
@@ -440,11 +561,35 @@ export default function App() {
         </div>
       </header>
 
+      {/* STEPPER */}
+      {(suggestions || result) && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", padding: "16px 24px 0", maxWidth: "400px", margin: "0 auto" }}>
+          {t.steps.map((label, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", flex: i < 2 ? 1 : "none" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: "50%", fontSize: "12px", fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: i <= currentStep ? "#FF8C42" : (isDark ? "#333" : "#E0E0E0"),
+                  color: i <= currentStep ? "#fff" : c.textMuted, transition: "all 0.3s",
+                }}>
+                  {i < currentStep ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : i + 1}
+                </div>
+                <span style={{ fontSize: "10px", fontWeight: 600, color: i <= currentStep ? "#FF8C42" : c.textMuted, whiteSpace: "nowrap" }}>{label}</span>
+              </div>
+              {i < 2 && <div style={{ flex: 1, height: "2px", background: i < currentStep ? "#FF8C42" : (isDark ? "#333" : "#E0E0E0"), margin: "0 8px", marginBottom: "18px", transition: "background 0.3s" }} />}
+            </div>
+          ))}
+        </div>
+      )}
+
       <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px" }}>
 
         {result ? (
           /* ===== RESULTS ===== */
-          <div style={{ animation: "fadeUp 0.5s ease" }}>
+          <div ref={resultRef} style={{ animation: "fadeUp 0.5s ease" }}>
 
             {/* DESTINATION HERO */}
             <div style={{
@@ -468,8 +613,47 @@ export default function App() {
               </p>
             )}
 
-            {/* MINI CARTE */}
-            {coords && (
+            {/* MÉTÉO */}
+            {weather && (
+              <div style={{
+                display: "flex", gap: "16px", justifyContent: "center", marginBottom: "20px",
+                background: c.card, borderRadius: "12px", padding: "14px 20px", boxShadow: c.shadow,
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF8C42" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+                  <div>
+                    <div style={{ fontSize: "11px", color: c.textSub, fontWeight: 600 }}>{t.avgTemp}</div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: c.text }}>{weather.temp}°C</div>
+                  </div>
+                </div>
+                <div style={{ width: "1px", background: c.inputBorder }} />
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3EC1D3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                  <div>
+                    <div style={{ fontSize: "11px", color: c.textSub, fontWeight: 600 }}>{t.rainfall}</div>
+                    <div style={{ fontSize: "16px", fontWeight: 700, color: c.text }}>{weather.precip}mm</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* MINI CARTE — road trip multi-markers ou single marker */}
+            {result.stages && stageCoords.length > 1 ? (
+              <div style={{ borderRadius: "16px", overflow: "hidden", marginBottom: "32px", boxShadow: c.shadow, height: "260px" }}>
+                <MapContainer center={stageCoords[0]} zoom={5} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false} zoomControl={false}>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {stageCoords.map((pos, i) => (
+                    <Marker key={i} position={pos}>
+                      <Popup>{result.stages[i]?.city}</Popup>
+                    </Marker>
+                  ))}
+                  <Polyline positions={stageCoords} color="#FF8C42" weight={3} dashArray="8 6" />
+                </MapContainer>
+              </div>
+            ) : coords && (
               <div style={{ borderRadius: "16px", overflow: "hidden", marginBottom: "32px", boxShadow: c.shadow, height: "220px" }}>
                 <MapContainer center={coords} zoom={10} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false} dragging={false} zoomControl={false}>
                   <TileLayer
@@ -550,26 +734,106 @@ export default function App() {
               ) : t.save}
             </button>
 
-            {/* PROGRAMME */}
-            <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: c.text }}>{t.prog}</h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
-              {result.days?.map((day, i) => (
-                <div key={i} style={{ background: c.card, borderRadius: "16px", overflow: "hidden", boxShadow: c.shadow, animation: `fadeUp 0.3s ease ${i * 0.1}s both`, transition: "background 0.3s" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "18px 20px", borderBottom: `1px solid ${c.dayBorder}` }}>
-                    <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", color: "#fff", flexShrink: 0 }}>{i + 1}</div>
-                    <div style={{ fontWeight: 700, fontSize: "16px", color: c.text }}>{day.title}</div>
-                  </div>
-                  <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                    {["morning", "afternoon", "evening"].map(p => day[p] ? (
-                      <div key={p} style={{ paddingLeft: "14px", borderLeft: `3px solid ${p === "morning" ? "#FFD4A8" : p === "afternoon" ? "#FF8C42" : "#D4756B"}` }}>
-                        <div style={{ fontSize: "11px", fontWeight: 700, color: p === "morning" ? "#C49A5C" : p === "afternoon" ? "#FF8C42" : "#D4756B", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.per[p]}</div>
-                        <div style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7 }}>{day[p]}</div>
-                      </div>
-                    ) : null)}
-                  </div>
-                </div>
-              ))}
+            {/* EXPORT / SHARE */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "32px" }}>
+              <button onClick={exportPDF} style={{
+                flex: 1, padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
+                background: "transparent", color: c.textMuted, fontSize: "13px", fontWeight: 700,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                {t.exportPdf}
+              </button>
+              <button onClick={shareTrip} style={{
+                flex: 1, padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
+                background: copiedLink ? c.tipsBg : "transparent", color: copiedLink ? c.tipsText : c.textMuted,
+                fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                transition: "all 0.3s",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                {copiedLink ? t.copied : t.share}
+              </button>
             </div>
+
+            {/* PROGRAMME — Road trip multi-étapes ou voyage classique */}
+            {result.stages ? (
+              <>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: c.text }}>{t.routeTitle}</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "32px" }}>
+                  {result.stages.map((stage, si) => (
+                    <div key={si} style={{ animation: `fadeUp 0.4s ease ${si * 0.15}s both` }}>
+                      {/* Stage header */}
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: "14px", marginBottom: "12px",
+                      }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: "50%", background: DEST_GRADIENTS[si % DEST_GRADIENTS.length],
+                          display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", color: "#fff", flexShrink: 0,
+                        }}>{si + 1}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: "17px", color: c.text }}>{stage.city}, {stage.country}</div>
+                          <div style={{ fontSize: "12px", color: c.textSub }}>{stage.nights} {t.stageNights} — {stage.description}</div>
+                        </div>
+                      </div>
+                      {/* Stage image */}
+                      {stageImages[stage.city] && (
+                        <div style={{
+                          height: "140px", borderRadius: "12px", overflow: "hidden", marginBottom: "12px",
+                          background: `url(${stageImages[stage.city]}) center/cover no-repeat`,
+                        }} />
+                      )}
+                      {/* Stage days */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingLeft: "18px", borderLeft: `3px solid ${DEST_GRADIENTS[si % DEST_GRADIENTS.length].includes("#FF") ? "#FF8C42" : "#3EC1D3"}` }}>
+                        {stage.days?.map((day, di) => (
+                          <div key={di} style={{ background: c.card, borderRadius: "14px", overflow: "hidden", boxShadow: c.shadow }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "14px 16px", borderBottom: `1px solid ${c.dayBorder}` }}>
+                              <div style={{ width: 26, height: 26, borderRadius: "50%", background: isDark ? "#333" : "#F0F0F0", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", color: c.textMuted, flexShrink: 0 }}>J{di + 1}</div>
+                              <div style={{ fontWeight: 700, fontSize: "14px", color: c.text }}>{day.title}</div>
+                            </div>
+                            <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                              {["morning", "afternoon", "evening"].map(p => day[p] ? (
+                                <div key={p} style={{ paddingLeft: "12px", borderLeft: `3px solid ${p === "morning" ? "#FFD4A8" : p === "afternoon" ? "#FF8C42" : "#D4756B"}` }}>
+                                  <div style={{ fontSize: "10px", fontWeight: 700, color: p === "morning" ? "#C49A5C" : p === "afternoon" ? "#FF8C42" : "#D4756B", marginBottom: "3px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.per[p]}</div>
+                                  <div style={{ fontSize: "13px", color: c.textMuted, lineHeight: 1.6 }}>{day[p]}</div>
+                                </div>
+                              ) : null)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Connector arrow between stages */}
+                      {si < result.stages.length - 1 && (
+                        <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={c.textSub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px", color: c.text }}>{t.prog}</h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "32px" }}>
+                  {result.days?.map((day, i) => (
+                    <div key={i} style={{ background: c.card, borderRadius: "16px", overflow: "hidden", boxShadow: c.shadow, animation: `fadeUp 0.3s ease ${i * 0.1}s both`, transition: "background 0.3s" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "18px 20px", borderBottom: `1px solid ${c.dayBorder}` }}>
+                        <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#FF8C42", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", color: "#fff", flexShrink: 0 }}>{i + 1}</div>
+                        <div style={{ fontWeight: 700, fontSize: "16px", color: c.text }}>{day.title}</div>
+                      </div>
+                      <div style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                        {["morning", "afternoon", "evening"].map(p => day[p] ? (
+                          <div key={p} style={{ paddingLeft: "14px", borderLeft: `3px solid ${p === "morning" ? "#FFD4A8" : p === "afternoon" ? "#FF8C42" : "#D4756B"}` }}>
+                            <div style={{ fontSize: "11px", fontWeight: 700, color: p === "morning" ? "#C49A5C" : p === "afternoon" ? "#FF8C42" : "#D4756B", marginBottom: "4px", textTransform: "uppercase", letterSpacing: "0.5px" }}>{t.per[p]}</div>
+                            <div style={{ fontSize: "14px", color: c.textMuted, lineHeight: 1.7 }}>{day[p]}</div>
+                          </div>
+                        ) : null)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* TIPS */}
             {result.tips?.length > 0 && (
@@ -654,14 +918,24 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Bouton choisir */}
-                  <button onClick={() => selectDestination(s)} style={{
-                    width: "100%", padding: "14px", border: "none", borderTop: `1px solid ${c.inputBorder}`,
-                    background: "transparent", color: "#FF8C42", fontSize: "14px", fontWeight: 700,
-                    transition: "background 0.2s",
-                  }}>
-                    {t.pickChoose}
-                  </button>
+                  {/* Boutons choisir + comparer */}
+                  <div style={{ display: "flex", borderTop: `1px solid ${c.inputBorder}` }}>
+                    <button onClick={() => selectDestination(s)} style={{
+                      flex: 1, padding: "14px", border: "none",
+                      background: "transparent", color: "#FF8C42", fontSize: "14px", fontWeight: 700,
+                      transition: "background 0.2s",
+                    }}>
+                      {t.pickChoose}
+                    </button>
+                    <button onClick={() => { toggleCompare(s); if (comparing.length === 1 && !comparing.find(x => x.city === s.city)) setShowCompare(true); }} style={{
+                      padding: "14px 18px", border: "none", borderLeft: `1px solid ${c.inputBorder}`,
+                      background: comparing.find(x => x.city === s.city) ? (isDark ? "#3A2A1A" : "#FFF4ED") : "transparent",
+                      color: comparing.find(x => x.city === s.city) ? "#FF8C42" : c.textMuted,
+                      fontSize: "12px", fontWeight: 700, transition: "all 0.2s",
+                    }}>
+                      {t.compare}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -804,6 +1078,42 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* MODAL COMPARAISON */}
+      {showCompare && comparing.length === 2 && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }} onClick={() => setShowCompare(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            width: "100%", maxWidth: "600px", maxHeight: "85vh", background: c.card, borderRadius: "20px",
+            padding: "24px", overflowY: "auto", animation: "fadeUp 0.3s ease",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "18px", fontWeight: 700, color: c.text }}>{t.vsTitle}</h3>
+              <button onClick={() => setShowCompare(false)} style={{ background: "none", border: "none", fontSize: "22px", color: c.textMuted, padding: "4px" }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              {comparing.map((s, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{
+                    height: "120px", borderRadius: "12px", overflow: "hidden",
+                    background: suggestionImages[s.city] ? `url(${suggestionImages[s.city]}) center/cover` : DEST_GRADIENTS[i],
+                  }} />
+                  <h4 style={{ fontSize: "16px", fontWeight: 700, color: c.text }}>{s.city}</h4>
+                  <div style={{ fontSize: "12px", color: c.textSub }}>{s.country}</div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "#FF8C42" }}>{s.estimatedBudget}€</div>
+                  <p style={{ fontSize: "12px", color: c.textMuted, lineHeight: 1.6 }}>{s.description}</p>
+                  {s.suggestedDates && <p style={{ fontSize: "11px", color: c.textSub }}>{s.suggestedDates}</p>}
+                  <button onClick={() => { setShowCompare(false); setComparing([]); selectDestination(s); }} style={{
+                    padding: "12px", borderRadius: "10px", border: "none",
+                    background: "#FF8C42", color: "#fff", fontSize: "13px", fontWeight: 700,
+                  }}>
+                    {t.pickChoose}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL MES VOYAGES */}
       {showSaved && (
