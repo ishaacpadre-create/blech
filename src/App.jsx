@@ -247,9 +247,11 @@ export default function App() {
         // Fetch weather
         try {
           const m = parseInt(month) + 1;
-          const yr = new Date().getFullYear();
+          const now = new Date();
+          const yr = m <= now.getMonth() ? now.getFullYear() + 1 : now.getFullYear();
+          const lastDay = new Date(yr, m, 0).getDate();
           const startD = `${yr}-${String(m).padStart(2,'0')}-01`;
-          const endD = `${yr}-${String(m).padStart(2,'0')}-28`;
+          const endD = `${yr}-${String(m).padStart(2,'0')}-${lastDay}`;
           const wRes = await fetch(`https://climate-api.open-meteo.com/v1/climate?latitude=${lat}&longitude=${lon}&start_date=${startD}&end_date=${endD}&models=EC_Earth3P_HR&daily=temperature_2m_mean,precipitation_sum`);
           const wData = await wRes.json();
           if (wData.daily) {
@@ -458,14 +460,16 @@ export default function App() {
     setWeather(null);
     setComparing([]);
     setShowCompare(false);
+    setShowSaved(false);
     setStageCoords([]);
     setStageImages({});
+    setLdIdx(0);
     setError("");
   };
 
   // Export PDF
   const exportPDF = async () => {
-    if (!resultRef.current) return;
+    if (!resultRef.current || !result) return;
     try {
       const canvas = await html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: isDark ? "#121212" : "#FAFAFA" });
       const imgData = canvas.toDataURL("image/png");
@@ -479,13 +483,14 @@ export default function App() {
         pdf.addImage(imgData, "PNG", 0, -pos, w, h);
         pos += pageH;
       }
-      pdf.save(`BLEESH-${result.destination.city}.pdf`);
+      pdf.save(`BLEESH-${result.destination?.city || 'voyage'}.pdf`);
     } catch (err) { console.error("PDF export error:", err); }
   };
 
   // Share
   const shareTrip = async () => {
-    const text = `${result.destination.city}, ${result.destination.country} - BLEESH`;
+    if (!result) return;
+    const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
     if (navigator.share) {
       try { await navigator.share({ title: "BLEESH", text, url: window.location.href }); } catch {}
     } else {
@@ -977,14 +982,14 @@ export default function App() {
               <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={lbl}>{t.month}</label>
-                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? "#2D3436" : "#bbb" }}>
+                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? c.text : "#bbb" }}>
                     <option value="">—</option>
                     {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={lbl}>{t.dur}</label>
-                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? "#2D3436" : "#bbb" }}>
+                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? c.text : "#bbb" }}>
                     <option value="">—</option>
                     {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
                   </select>

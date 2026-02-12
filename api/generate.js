@@ -257,6 +257,11 @@ ${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`)
     const parts = data.candidates?.[0]?.content?.parts || [];
     const text = parts.filter(p => p.text).map(p => p.text).pop() || '';
 
+    if (!text) {
+      console.error('Empty response from Gemini:', JSON.stringify(data).slice(0, 500));
+      return res.status(500).json({ error: 'Empty AI response' });
+    }
+
     const cleaned = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const trip = JSON.parse(cleaned);
 
