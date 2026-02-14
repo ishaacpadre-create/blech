@@ -697,30 +697,38 @@ export default function App() {
   const shareTrip = async () => {
     if (!result) return;
     try {
-      // Version allégée du voyage
+      // Données minimales pour garder l'URL courte (pas de jour par jour)
       const shareData = {
-        d: { c: result.destination.city, co: result.destination.country, de: result.destination.description },
+        d: { c: result.destination.city, co: result.destination.country, de: (result.destination.description || '').slice(0, 200) },
         b: result.budget ? { f: result.budget.flights, h: result.budget.hotel, a: result.budget.activities, fo: result.budget.food, t: result.budget.transport } : null,
-        da: result.days?.map(d => ({ t: d.title, m: d.morning, a: d.afternoon, e: d.evening })),
-        st: result.stages?.map(s => ({ c: s.city, co: s.country, n: s.nights, de: s.description, da: s.days?.map(d => ({ t: d.title, m: d.morning, a: d.afternoon, e: d.evening })) })),
-        ti: result.tips,
         sd: result.suggestedDates,
       };
-      // Encodage UTF-8 safe
+      // Encodage UTF-8 safe (par chunks pour éviter stack overflow)
       const json = JSON.stringify(shareData);
-      const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(json)));
+      const bytes = new TextEncoder().encode(json);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const encoded = btoa(binary);
       const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${encodeURIComponent(encoded)}`;
+
       const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
 
       if (navigator.share) {
-        try { await navigator.share({ title: "BLEESH", text, url: shareUrl }); } catch {}
+        await navigator.share({ title: "BLEESH", text, url: shareUrl });
       } else {
         await navigator.clipboard.writeText(shareUrl);
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 2000);
       }
     } catch (err) {
-      console.error("Share error:", err);
+      // Fallback : copier juste un texte descriptif
+      try {
+        const total = ['flights','hotel','activities','food','transport'].reduce((s, k) => s + (result.budget?.[k] || 0), 0);
+        const text = `${result.destination.city}, ${result.destination.country} - ${total}€\n${result.destination.description || ''}\n${result.suggestedDates || ''}`;
+        await navigator.clipboard.writeText(text);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      } catch { console.error("Share error:", err); }
     }
   };
 
