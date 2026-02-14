@@ -5,6 +5,7 @@
   "rewrites": [
     { "source": "/api/suggest", "destination": "/api/suggest" },
     { "source": "/api/generate", "destination": "/api/generate" },
+    { "source": "/api/prices", "destination": "/api/prices" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

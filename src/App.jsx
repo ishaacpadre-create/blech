@@ -34,7 +34,7 @@ const T = {
     pickBack: "Retour",
     pickBudget: "Budget estimé",
     ldSuggest: ["Analyse de vos préférences...","Recherche des meilleures destinations...","Comparaison des options..."],
-    ldItinerary: ["Construction du programme jour par jour...","Calcul des meilleurs prix...","Recherche des activités...","Finalisation de votre voyage..."],
+    ldItinerary: ["Construction du programme jour par jour...","Recherche des vrais prix de vols...","Recherche d'hôtels...","Finalisation de votre voyage..."],
     errSuggest: "Erreur lors de la recherche de destinations. Réessayez.",
     exactDate: "Date exacte (optionnel)", exactDatePh: "JJ/MM/AAAA",
     customNotes: "Demandes spéciales", customNotesPh: "Ex: hôtel avec piscine, activités pour enfants, éviter les longs trajets...",
@@ -44,6 +44,7 @@ const T = {
     weatherTitle: "Météo", avgTemp: "Temp. moyenne", rainfall: "Précipitations",
     compare: "Comparer", vsTitle: "Comparaison", closeCompare: "Fermer",
     stage: "Étape", stageNights: "nuit(s)", routeTitle: "Le circuit",
+    realPrice: "Prix réel", estPrice: "Estimé",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -74,7 +75,7 @@ const T = {
     pickBack: "Back",
     pickBudget: "Estimated budget",
     ldSuggest: ["Analyzing your preferences...","Searching the best destinations...","Comparing options..."],
-    ldItinerary: ["Building your day-by-day program...","Calculating best prices...","Finding activities...","Finalizing your trip..."],
+    ldItinerary: ["Building your day-by-day program...","Fetching real flight prices...","Searching hotel deals...","Finalizing your trip..."],
     errSuggest: "Error finding destinations. Please try again.",
     exactDate: "Exact date (optional)", exactDatePh: "DD/MM/YYYY",
     customNotes: "Special requests", customNotesPh: "E.g.: hotel with pool, kid-friendly activities, avoid long drives...",
@@ -84,6 +85,7 @@ const T = {
     weatherTitle: "Weather", avgTemp: "Avg. temp.", rainfall: "Rainfall",
     compare: "Compare", vsTitle: "Comparison", closeCompare: "Close",
     stage: "Stage", stageNights: "night(s)", routeTitle: "The route",
+    realPrice: "Real price", estPrice: "Estimated",
   }
 };
 
@@ -394,28 +396,64 @@ export default function App() {
     setError("");
 
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          budget: +budget,
-          travelers: trav,
-          month,
-          duration: dur,
-          city: city || 'Paris',
-          preferences: [...prefs, ...(otherPrefText ? [otherPrefText] : [])],
-          tripType,
-          lang,
-          exactDate,
-          customNotes,
-          chosenCity: suggestion.city,
-          chosenCountry: suggestion.country,
+      // Lancer génération IA + recherche prix réels en parallèle
+      const [generateRes, pricesRes] = await Promise.all([
+        fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            budget: +budget,
+            travelers: trav,
+            month,
+            duration: dur,
+            city: city || 'Paris',
+            preferences: [...prefs, ...(otherPrefText ? [otherPrefText] : [])],
+            tripType,
+            lang,
+            exactDate,
+            customNotes,
+            chosenCity: suggestion.city,
+            chosenCountry: suggestion.country,
+          }),
         }),
-      });
+        fetch('/api/prices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            departureCity: city || 'Paris',
+            destinationCity: suggestion.city,
+            destinationCountry: suggestion.country,
+            month,
+            duration: dur,
+            exactDate,
+            travelers: trav,
+          }),
+        }).catch(() => ({ ok: false })),
+      ]);
 
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
+      if (!generateRes.ok) throw new Error('API error');
+      const data = await generateRes.json();
       if (data.error) throw new Error(data.error);
+
+      // Fusionner les vrais prix si disponibles
+      if (pricesRes.ok) {
+        try {
+          const prices = await pricesRes.json();
+          const priceSource = { flights: 'estimated', hotel: 'estimated' };
+
+          if (prices.flights?.price != null) {
+            data.budget.flights = prices.flights.price;
+            data.flightDetails = prices.flights;
+            priceSource.flights = 'amadeus';
+          }
+          if (prices.hotel?.totalPrice != null) {
+            data.budget.hotel = prices.hotel.totalPrice;
+            data.hotelDetails = prices.hotel;
+            priceSource.hotel = 'amadeus';
+          }
+          data.budget.priceSource = priceSource;
+        } catch { /* garder les prix IA en cas d'erreur de parsing */ }
+      }
 
       data.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
       setResult(data);
@@ -692,7 +730,17 @@ export default function App() {
                         </div>
                         <span style={{ fontSize: "13px", color: c.textMuted }}>{label}</span>
                       </div>
-                      <span style={{ fontSize: "14px", fontWeight: 700, color: c.text }}>{result.budget?.[k] || 0}€</span>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: c.text, display: "flex", alignItems: "center", gap: "6px" }}>
+                        {result.budget?.[k] || 0}€
+                        {result.budget?.priceSource?.[k] === 'amadeus' ? (
+                          <span title={t.realPrice} style={{ display: "inline-flex", alignItems: "center", gap: "3px", background: "#E8F5E9", color: "#2EAD7A", fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "8px" }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            {t.realPrice}
+                          </span>
+                        ) : (k === 'flights' || k === 'hotel') && !result.budget?.priceSource ? null : result.budget?.priceSource && (k === 'flights' || k === 'hotel') ? (
+                          <span title={t.estPrice} style={{ fontSize: "10px", color: c.textSub, fontWeight: 600 }}>~</span>
+                        ) : null}
+                      </span>
                     </div>
                   ))}
                   <div style={{ borderTop: `1px solid ${c.inputBorder}`, paddingTop: "10px", marginTop: "10px", display: "flex", justifyContent: "space-between" }}>
@@ -703,12 +751,38 @@ export default function App() {
               })()}
             </div>
 
+            {/* AMADEUS DETAILS */}
+            {(result.flightDetails || result.hotelDetails) && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
+                {result.flightDetails && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", background: c.card, borderRadius: "12px", padding: "12px 16px", boxShadow: c.shadow, border: `1px solid ${c.inputBorder}` }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "8px", background: BCOLORS.flights, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>{CAT_ICONS.flights}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: c.text }}>{result.flightDetails.airline || 'Vol'} — {result.flightDetails.pricePerPerson}€/pers.</div>
+                      <div style={{ fontSize: "11px", color: c.textSub }}>{result.flightDetails.outbound?.split('T')[0] || ''}</div>
+                    </div>
+                    <span style={{ background: "#E8F5E9", color: "#2EAD7A", fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: "8px" }}>{t.realPrice}</span>
+                  </div>
+                )}
+                {result.hotelDetails && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", background: c.card, borderRadius: "12px", padding: "12px 16px", boxShadow: c.shadow, border: `1px solid ${c.inputBorder}` }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "8px", background: BCOLORS.hotel, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>{CAT_ICONS.hotel}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: c.text }}>{result.hotelDetails.hotelName || 'Hôtel'} {result.hotelDetails.rating ? '★'.repeat(result.hotelDetails.rating) : ''}</div>
+                      <div style={{ fontSize: "11px", color: c.textSub }}>{result.hotelDetails.pricePerNight}€/{lang === 'fr' ? 'nuit' : 'night'}</div>
+                    </div>
+                    <span style={{ background: "#E8F5E9", color: "#2EAD7A", fontSize: "10px", fontWeight: 700, padding: "3px 8px", borderRadius: "8px" }}>{t.realPrice}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* BOOKING LINKS */}
             <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
               {[
                 { key: "bookFlights", icon: CAT_ICONS.flights, color: BCOLORS.flights, url: `https://www.skyscanner.fr/transport/vols/${encodeURIComponent(city || 'Paris')}/${encodeURIComponent(result.destination.city)}/` },
                 { key: "bookHotel", icon: CAT_ICONS.hotel, color: BCOLORS.hotel, url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(result.destination.city + ', ' + result.destination.country)}` },
-                { key: "bookActivities", icon: CAT_ICONS.activities, color: BCOLORS.activities, url: `https://www.getyourguide.fr/s/?q=${encodeURIComponent(result.destination.city)}` },
+                { key: "bookActivities", icon: CAT_ICONS.activities, color: BCOLORS.activities, url: `https://www.getyourguide.com/s/?q=${encodeURIComponent(result.destination.city)}&partner_id=TU7ZS7Y&cmp=share_to_earn` },
               ].map(({ key, icon, color, url }) => (
                 <a key={key} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1, minWidth: "100px" }}>
                   <div style={{
