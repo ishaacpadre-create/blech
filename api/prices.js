@@ -14,7 +14,9 @@ export default async function handler(req, res) {
   const BASE = process.env.AMADEUS_BASE_URL || 'https://test.api.amadeus.com';
 
   try {
-    const { departureCity, destinationCity, month, duration, exactDate, travelers } = req.body;
+    const { departureCity, destinationCity, month, duration, exactDate, travelers } = req.body || {};
+
+    if (!destinationCity) return res.status(200).json({ flights: null, hotel: null });
 
     const token = await getToken(BASE, CLIENT_ID, CLIENT_SECRET);
     if (!token) return res.status(200).json({ flights: null, hotel: null });
@@ -149,69 +151,80 @@ function computeDates(month, duration, exactDate) {
 }
 
 async function searchFlights(base, token, origin, dest, depDate, retDate, adults) {
-  const url = `${base}/v2/shopping/flight-offers?originLocationCode=${origin}&destinationLocationCode=${dest}&departureDate=${depDate}&returnDate=${retDate}&adults=${adults}&max=5&currencyCode=EUR`;
+  try {
+    const url = `${base}/v2/shopping/flight-offers?originLocationCode=${origin}&destinationLocationCode=${dest}&departureDate=${depDate}&returnDate=${retDate}&adults=${adults}&max=5&currencyCode=EUR`;
 
-  const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!resp.ok) return null;
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!resp.ok) return null;
 
-  const data = await resp.json();
-  const offers = data.data;
-  if (!offers || offers.length === 0) return null;
+    const data = await resp.json();
+    const offers = data.data;
+    if (!Array.isArray(offers) || offers.length === 0) return null;
 
-  const cheapest = offers.reduce((min, o) =>
-    parseFloat(o.price.grandTotal) < parseFloat(min.price.grandTotal) ? o : min
-  );
+    const cheapest = offers.reduce((min, o) =>
+      parseFloat(o.price?.grandTotal || 0) < parseFloat(min.price?.grandTotal || 0) ? o : min
+    );
 
-  return {
-    price: Math.round(parseFloat(cheapest.price.grandTotal)),
-    pricePerPerson: Math.round(parseFloat(cheapest.price.grandTotal) / adults),
-    airline: cheapest.validatingAirlineCodes?.[0] || null,
-    outbound: cheapest.itineraries?.[0]?.segments?.[0]?.departure?.at || null,
-    inbound: cheapest.itineraries?.[1]?.segments?.[0]?.departure?.at || null,
-    source: 'amadeus',
-  };
+    if (!cheapest.price?.grandTotal) return null;
+
+    return {
+      price: Math.round(parseFloat(cheapest.price.grandTotal)),
+      pricePerPerson: Math.round(parseFloat(cheapest.price.grandTotal) / adults),
+      airline: cheapest.validatingAirlineCodes?.[0] || null,
+      outbound: cheapest.itineraries?.[0]?.segments?.[0]?.departure?.at || null,
+      inbound: cheapest.itineraries?.[1]?.segments?.[0]?.departure?.at || null,
+      source: 'amadeus',
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function searchHotels(base, token, cityCode, checkIn, checkOut, adults) {
-  // Step 1: Get hotel IDs
-  const listUrl = `${base}/v1/reference-data/locations/hotels/by-city?cityCode=${cityCode}&radius=20&radiusUnit=KM&ratings=3,4&hotelSource=ALL`;
-  const listResp = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
-  if (!listResp.ok) return null;
+  try {
+    // Step 1: Get hotel IDs
+    const listUrl = `${base}/v1/reference-data/locations/hotels/by-city?cityCode=${cityCode}&radius=20&radiusUnit=KM&ratings=3,4&hotelSource=ALL`;
+    const listResp = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!listResp.ok) return null;
 
-  const listData = await listResp.json();
-  const hotels = listData.data;
-  if (!hotels || hotels.length === 0) return null;
+    const listData = await listResp.json();
+    const hotels = listData.data;
+    if (!Array.isArray(hotels) || hotels.length === 0) return null;
 
-  // Take first 20 (API limit)
-  const hotelIds = hotels.slice(0, 20).map(h => h.hotelId).join(',');
+    // Take first 20 (API limit)
+    const hotelIds = hotels.slice(0, 20).map(h => h.hotelId).join(',');
 
-  // Step 2: Get offers
-  const offersUrl = `${base}/v3/shopping/hotel-offers?hotelIds=${hotelIds}&checkInDate=${checkIn}&checkOutDate=${checkOut}&adults=${adults}&currency=EUR&bestRateOnly=true`;
-  const offersResp = await fetch(offersUrl, { headers: { Authorization: `Bearer ${token}` } });
-  if (!offersResp.ok) return null;
+    // Step 2: Get offers
+    const offersUrl = `${base}/v3/shopping/hotel-offers?hotelIds=${hotelIds}&checkInDate=${checkIn}&checkOutDate=${checkOut}&adults=${adults}&currency=EUR&bestRateOnly=true`;
+    const offersResp = await fetch(offersUrl, { headers: { Authorization: `Bearer ${token}` } });
+    if (!offersResp.ok) return null;
 
-  const offersData = await offersResp.json();
-  const hotelOffers = offersData.data;
-  if (!hotelOffers || hotelOffers.length === 0) return null;
+    const offersData = await offersResp.json();
+    const hotelOffers = offersData.data;
+    if (!Array.isArray(hotelOffers) || hotelOffers.length === 0) return null;
 
-  let cheapest = null;
-  for (const hotel of hotelOffers) {
-    const offer = hotel.offers?.[0];
-    if (!offer?.price?.total) continue;
-    const totalPrice = parseFloat(offer.price.total);
-    if (!cheapest || totalPrice < cheapest.totalPrice) {
-      const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
-      cheapest = {
-        totalPrice: Math.round(totalPrice),
-        pricePerNight: Math.round(totalPrice / nights),
-        hotelName: hotel.hotel?.name || null,
-        rating: hotel.hotel?.rating ? parseInt(hotel.hotel.rating) : null,
-        source: 'amadeus',
-      };
+    let cheapest = null;
+    for (const hotel of hotelOffers) {
+      const offer = hotel.offers?.[0];
+      if (!offer?.price?.total) continue;
+      const totalPrice = parseFloat(offer.price.total);
+      if (isNaN(totalPrice)) continue;
+      if (!cheapest || totalPrice < cheapest.totalPrice) {
+        const nights = Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
+        cheapest = {
+          totalPrice: Math.round(totalPrice),
+          pricePerNight: Math.round(totalPrice / nights),
+          hotelName: hotel.hotel?.name || null,
+          rating: hotel.hotel?.rating ? parseInt(hotel.hotel.rating) : null,
+          source: 'amadeus',
+        };
+      }
     }
-  }
 
-  return cheapest;
+    return cheapest;
+  } catch {
+    return null;
+  }
 }
 
 function withTimeout(promise, ms) {

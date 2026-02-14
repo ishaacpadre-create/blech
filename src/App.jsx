@@ -548,6 +548,56 @@ export default function App() {
     });
   };
 
+  // Calculer les dates de voyage pour les liens de réservation
+  const getTravelDates = () => {
+    const DURATION_DAYS = [3, 7, 10, 14, 21, 30];
+    const durationDays = DURATION_DAYS[parseInt(dur)] || 7;
+    let depDate;
+
+    if (exactDate) {
+      depDate = new Date(exactDate);
+      if (isNaN(depDate.getTime())) depDate = null;
+    }
+    if (!depDate) {
+      const m = parseInt(month);
+      const now = new Date();
+      const year = (m <= now.getMonth()) ? now.getFullYear() + 1 : now.getFullYear();
+      depDate = new Date(year, m, 15);
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (depDate <= today) {
+      depDate = new Date(today);
+      depDate.setDate(depDate.getDate() + 1);
+    }
+    const retDate = new Date(depDate);
+    retDate.setDate(retDate.getDate() + durationDays);
+
+    const fmt = (d) => d.toISOString().split('T')[0];
+    const fmtUS = (d) => `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+    return { dep: fmt(depDate), ret: fmt(retDate), depUS: fmtUS(depDate), retUS: fmtUS(retDate) };
+  };
+
+  // Construire les URLs Expedia avec les bons paramètres
+  const getBookingUrls = () => {
+    if (!result) return { flights: '#', hotel: '#' };
+
+    // Utiliser les dates Amadeus si dispo, sinon calculer
+    const dates = getTravelDates();
+    const depDate = result.flightDetails?.outbound?.split('T')[0] || dates.dep;
+    const retDate = result.flightDetails?.inbound?.split('T')[0] || dates.ret;
+
+    const origin = city || 'Paris';
+    const dest = result.destination.city;
+    const country = result.destination.country;
+    const adults = Math.min(trav, 9);
+
+    const flightsUrl = `https://www.expedia.com/Flights-search?trip=roundtrip&leg1=from:${encodeURIComponent(origin)},to:${encodeURIComponent(dest)},departure:${depDate}TANYT&leg2=from:${encodeURIComponent(dest)},to:${encodeURIComponent(origin)},departure:${retDate}TANYT&passengers=adults:${adults}&options=sortby:price`;
+    const hotelUrl = `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(dest + ', ' + country)}&startDate=${dates.depUS}&endDate=${dates.retUS}&rooms=1&adults=${adults}&sort=PRICE_LOW_TO_HIGH`;
+
+    return { flights: flightsUrl, hotel: hotelUrl };
+  };
+
   // Step actuel
   const currentStep = result ? 2 : suggestions ? 1 : 0;
 
@@ -779,9 +829,9 @@ export default function App() {
 
             {/* BOOKING LINKS */}
             <div style={{ display: "flex", gap: "10px", marginBottom: "32px", flexWrap: "wrap" }}>
-              {[
-                { key: "bookFlights", icon: CAT_ICONS.flights, color: BCOLORS.flights, url: `https://www.skyscanner.fr/transport/vols/${encodeURIComponent(city || 'Paris')}/${encodeURIComponent(result.destination.city)}/` },
-                { key: "bookHotel", icon: CAT_ICONS.hotel, color: BCOLORS.hotel, url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(result.destination.city + ', ' + result.destination.country)}` },
+              {(() => { const urls = getBookingUrls(); return [
+                { key: "bookFlights", icon: CAT_ICONS.flights, color: BCOLORS.flights, url: urls.flights },
+                { key: "bookHotel", icon: CAT_ICONS.hotel, color: BCOLORS.hotel, url: urls.hotel },
                 { key: "bookActivities", icon: CAT_ICONS.activities, color: BCOLORS.activities, url: `https://www.getyourguide.com/s/?q=${encodeURIComponent(result.destination.city)}&partner_id=TU7ZS7Y&cmp=share_to_earn` },
               ].map(({ key, icon, color, url }) => (
                 <a key={key} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1, minWidth: "100px" }}>
@@ -794,7 +844,7 @@ export default function App() {
                     {t[key]}
                   </div>
                 </a>
-              ))}
+              )); })()}
             </div>
 
             {/* SAVE TRIP */}
