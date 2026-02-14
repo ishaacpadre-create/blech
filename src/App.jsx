@@ -323,34 +323,6 @@ export default function App() {
     setSavedTrips(saved);
   }, []);
 
-  // Charger un voyage partagé via URL
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const tripData = params.get('trip');
-      if (tripData) {
-        // Décodage UTF-8 safe
-        const bytes = Uint8Array.from(atob(tripData), c => c.charCodeAt(0));
-        const json = new TextDecoder().decode(bytes);
-        const s = JSON.parse(json);
-        // Reconstruire le format complet depuis les clés raccourcies
-        const full = {
-          destination: { city: s.d?.c, country: s.d?.co, description: s.d?.de, gradient: DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)] },
-          budget: s.b ? { flights: s.b.f, hotel: s.b.h, activities: s.b.a, food: s.b.fo, transport: s.b.t } : null,
-          days: s.da?.map(d => ({ title: d.t, morning: d.m, afternoon: d.a, evening: d.e })),
-          stages: s.st?.map(st => ({ city: st.c, country: st.co, nights: st.n, description: st.de, days: st.da?.map(d => ({ title: d.t, morning: d.m, afternoon: d.a, evening: d.e })) })),
-          tips: s.ti,
-          suggestedDates: s.sd,
-        };
-        if (full.destination.city) {
-          setResult(full);
-          fetchDestImage(full.destination.city);
-          window.history.replaceState({}, '', window.location.pathname);
-        }
-      }
-    } catch (err) { console.error("Share load error:", err); }
-  }, []);
-
   const saveTrip = () => {
     const trip = { id: Date.now(), city: result.destination.city, country: result.destination.country, data: result, image: destImage };
     const updated = [...savedTrips, trip];
@@ -696,39 +668,41 @@ export default function App() {
   // Share
   const shareTrip = async () => {
     if (!result) return;
+    const city = result.destination?.city || '';
+    const country = result.destination?.country || '';
+    const desc = result.destination?.description || '';
+    const dates = result.suggestedDates || '';
+    const total = ['flights','hotel','activities','food','transport'].reduce((s, k) => s + (result.budget?.[k] || 0), 0);
+
+    const shareText = [
+      `${city}, ${country} — ${total}€`,
+      desc,
+      dates ? `📅 ${dates}` : '',
+      '',
+      `${lang === 'fr' ? 'Planifié avec' : 'Planned with'} BLEESH`,
+      window.location.origin,
+    ].filter(Boolean).join('\n');
+
     try {
-      // Données minimales pour garder l'URL courte (pas de jour par jour)
-      const shareData = {
-        d: { c: result.destination.city, co: result.destination.country, de: (result.destination.description || '').slice(0, 200) },
-        b: result.budget ? { f: result.budget.flights, h: result.budget.hotel, a: result.budget.activities, fo: result.budget.food, t: result.budget.transport } : null,
-        sd: result.suggestedDates,
-      };
-      // Encodage UTF-8 safe (par chunks pour éviter stack overflow)
-      const json = JSON.stringify(shareData);
-      const bytes = new TextEncoder().encode(json);
-      let binary = '';
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const encoded = btoa(binary);
-      const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${encodeURIComponent(encoded)}`;
-
-      const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
-
       if (navigator.share) {
-        await navigator.share({ title: "BLEESH", text, url: shareUrl });
+        await navigator.share({ title: `BLEESH — ${city}`, text: shareText });
       } else {
-        await navigator.clipboard.writeText(shareUrl);
+        await navigator.clipboard.writeText(shareText);
         setCopiedLink(true);
         setTimeout(() => setCopiedLink(false), 2000);
       }
-    } catch (err) {
-      // Fallback : copier juste un texte descriptif
-      try {
-        const total = ['flights','hotel','activities','food','transport'].reduce((s, k) => s + (result.budget?.[k] || 0), 0);
-        const text = `${result.destination.city}, ${result.destination.country} - ${total}€\n${result.destination.description || ''}\n${result.suggestedDates || ''}`;
-        await navigator.clipboard.writeText(text);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2000);
-      } catch { console.error("Share error:", err); }
+    } catch {
+      // Dernier recours : textarea trick pour la copie
+      const ta = document.createElement('textarea');
+      ta.value = shareText;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
     }
   };
 
