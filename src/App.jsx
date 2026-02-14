@@ -592,7 +592,7 @@ export default function App() {
     const country = result.destination.country;
     const adults = Math.min(trav, 9);
 
-    const flightsUrl = `https://www.expedia.com/Flights-search?trip=roundtrip&leg1=from:${encodeURIComponent(origin)},to:${encodeURIComponent(dest)},departure:${depDate}TANYT&leg2=from:${encodeURIComponent(dest)},to:${encodeURIComponent(origin)},departure:${retDate}TANYT&passengers=adults:${adults}&options=sortby:price`;
+    const flightsUrl = `https://www.expedia.com/go/flight/search/Roundtrip/${depDate}/${retDate}?FromAirport=${encodeURIComponent(origin)}&ToAirport=${encodeURIComponent(dest)}&NumAdult=${adults}`;
     const hotelUrl = `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(dest + ', ' + country)}&startDate=${dates.depUS}&endDate=${dates.retUS}&rooms=1&adults=${adults}&sort=PRICE_LOW_TO_HIGH`;
 
     return { flights: flightsUrl, hotel: hotelUrl };
