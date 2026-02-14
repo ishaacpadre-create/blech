@@ -380,6 +380,7 @@ export default function App() {
 
       setSuggestions(data.suggestions);
       fetchSuggestionImages(data.suggestions);
+      window.scrollTo(0, 0);
     } catch (err) {
       console.error(err);
       setError(t.errSuggest);
@@ -457,6 +458,7 @@ export default function App() {
 
       data.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
       setResult(data);
+      window.scrollTo(0, 0);
       if (data.stages && data.stages.length > 0) {
         fetchStageData(data.stages);
       } else {
@@ -592,8 +594,9 @@ export default function App() {
     const country = result.destination.country;
     const adults = Math.min(trav, 9);
 
-    const flightsUrl = `https://www.expedia.com/go/flight/search/Roundtrip/${depDate}/${retDate}?FromAirport=${encodeURIComponent(origin)}&ToAirport=${encodeURIComponent(dest)}&NumAdult=${adults}`;
-    const hotelUrl = `https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(dest + ', ' + country)}&startDate=${dates.depUS}&endDate=${dates.retUS}&rooms=1&adults=${adults}&sort=PRICE_LOW_TO_HIGH`;
+    const expediaDomain = lang === 'fr' ? 'www.expedia.fr' : 'www.expedia.com';
+    const flightsUrl = `https://${expediaDomain}/go/flight/search/Roundtrip/${depDate}/${retDate}?FromAirport=${encodeURIComponent(origin)}&ToAirport=${encodeURIComponent(dest)}&NumAdult=${adults}`;
+    const hotelUrl = `https://${expediaDomain}/Hotel-Search?destination=${encodeURIComponent(dest + ', ' + country)}&startDate=${dates.depUS}&endDate=${dates.retUS}&rooms=1&adults=${adults}&sort=PRICE_LOW_TO_HIGH`;
 
     return { flights: flightsUrl, hotel: hotelUrl };
   };
