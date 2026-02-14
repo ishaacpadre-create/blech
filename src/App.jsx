@@ -329,17 +329,26 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       const tripData = params.get('trip');
       if (tripData) {
-        const decoded = JSON.parse(atob(tripData));
-        if (decoded?.destination) {
-          decoded.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
-          setResult(decoded);
-          if (decoded.destination.city) {
-            fetchDestImage(decoded.destination.city);
-          }
+        // Décodage UTF-8 safe
+        const bytes = Uint8Array.from(atob(tripData), c => c.charCodeAt(0));
+        const json = new TextDecoder().decode(bytes);
+        const s = JSON.parse(json);
+        // Reconstruire le format complet depuis les clés raccourcies
+        const full = {
+          destination: { city: s.d?.c, country: s.d?.co, description: s.d?.de, gradient: DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)] },
+          budget: s.b ? { flights: s.b.f, hotel: s.b.h, activities: s.b.a, food: s.b.fo, transport: s.b.t } : null,
+          days: s.da?.map(d => ({ title: d.t, morning: d.m, afternoon: d.a, evening: d.e })),
+          stages: s.st?.map(st => ({ city: st.c, country: st.co, nights: st.n, description: st.de, days: st.da?.map(d => ({ title: d.t, morning: d.m, afternoon: d.a, evening: d.e })) })),
+          tips: s.ti,
+          suggestedDates: s.sd,
+        };
+        if (full.destination.city) {
+          setResult(full);
+          fetchDestImage(full.destination.city);
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
-    } catch {}
+    } catch (err) { console.error("Share load error:", err); }
   }, []);
 
   const saveTrip = () => {
@@ -687,25 +696,31 @@ export default function App() {
   // Share
   const shareTrip = async () => {
     if (!result) return;
-    // Créer une version allégée du voyage (sans gradient ni détails lourds)
-    const shareData = {
-      destination: { city: result.destination.city, country: result.destination.country, description: result.destination.description },
-      budget: result.budget ? { flights: result.budget.flights, hotel: result.budget.hotel, activities: result.budget.activities, food: result.budget.food, transport: result.budget.transport } : null,
-      days: result.days,
-      stages: result.stages,
-      tips: result.tips,
-      suggestedDates: result.suggestedDates,
-    };
-    const encoded = btoa(JSON.stringify(shareData));
-    const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${encoded}`;
-    const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
+    try {
+      // Version allégée du voyage
+      const shareData = {
+        d: { c: result.destination.city, co: result.destination.country, de: result.destination.description },
+        b: result.budget ? { f: result.budget.flights, h: result.budget.hotel, a: result.budget.activities, fo: result.budget.food, t: result.budget.transport } : null,
+        da: result.days?.map(d => ({ t: d.title, m: d.morning, a: d.afternoon, e: d.evening })),
+        st: result.stages?.map(s => ({ c: s.city, co: s.country, n: s.nights, de: s.description, da: s.days?.map(d => ({ t: d.title, m: d.morning, a: d.afternoon, e: d.evening })) })),
+        ti: result.tips,
+        sd: result.suggestedDates,
+      };
+      // Encodage UTF-8 safe
+      const json = JSON.stringify(shareData);
+      const encoded = btoa(String.fromCharCode(...new TextEncoder().encode(json)));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${encodeURIComponent(encoded)}`;
+      const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
 
-    if (navigator.share) {
-      try { await navigator.share({ title: "BLEESH", text, url: shareUrl }); } catch {}
-    } else {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2000);
+      if (navigator.share) {
+        try { await navigator.share({ title: "BLEESH", text, url: shareUrl }); } catch {}
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      }
+    } catch (err) {
+      console.error("Share error:", err);
     }
   };
 
