@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import L from "leaflet";
@@ -324,6 +323,25 @@ export default function App() {
     setSavedTrips(saved);
   }, []);
 
+  // Charger un voyage partagé via URL
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tripData = params.get('trip');
+      if (tripData) {
+        const decoded = JSON.parse(atob(tripData));
+        if (decoded?.destination) {
+          decoded.destination.gradient = DEST_GRADIENTS[Math.floor(Math.random() * DEST_GRADIENTS.length)];
+          setResult(decoded);
+          if (decoded.destination.city) {
+            fetchDestImage(decoded.destination.city);
+          }
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
+    } catch {}
+  }, []);
+
   const saveTrip = () => {
     const trip = { id: Date.now(), city: result.destination.city, country: result.destination.country, data: result, image: destImage };
     const updated = [...savedTrips, trip];
@@ -507,22 +525,161 @@ export default function App() {
     setError("");
   };
 
-  // Export PDF
-  const exportPDF = async () => {
-    if (!resultRef.current || !result) return;
+  // Export PDF natif (texte structuré)
+  const exportPDF = () => {
+    if (!result) return;
     try {
-      const canvas = await html2canvas(resultRef.current, { scale: 2, useCORS: true, backgroundColor: isDark ? "#121212" : "#FAFAFA" });
-      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
-      const w = pdf.internal.pageSize.getWidth();
-      const h = (canvas.height * w) / canvas.width;
-      let pos = 0;
-      const pageH = pdf.internal.pageSize.getHeight();
-      while (pos < h) {
-        if (pos > 0) pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, -pos, w, h);
-        pos += pageH;
+      const W = pdf.internal.pageSize.getWidth();
+      const H = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxW = W - margin * 2;
+      let y = margin;
+
+      const checkPage = (needed = 12) => {
+        if (y + needed > H - margin) { pdf.addPage(); y = margin; }
+      };
+
+      // Header
+      pdf.setFillColor(255, 140, 66);
+      pdf.rect(0, 0, W, 40, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(28);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("BLEESH", margin, 25);
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(t.slogan, margin, 34);
+      y = 50;
+
+      // Destination
+      pdf.setTextColor(40, 40, 40);
+      pdf.setFontSize(22);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`${result.destination.city}, ${result.destination.country}`, margin, y);
+      y += 8;
+      if (result.destination.description) {
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(100, 100, 100);
+        const descLines = pdf.splitTextToSize(result.destination.description, maxW);
+        pdf.text(descLines, margin, y);
+        y += descLines.length * 5 + 4;
       }
+      if (result.suggestedDates) {
+        pdf.setFontSize(10);
+        pdf.setTextColor(255, 140, 66);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(result.suggestedDates, margin, y);
+        y += 8;
+      }
+
+      // Budget
+      checkPage(50);
+      y += 4;
+      pdf.setFillColor(245, 245, 245);
+      pdf.roundedRect(margin, y, maxW, 48, 3, 3, 'F');
+      y += 8;
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(40, 40, 40);
+      pdf.text("Budget", margin + 6, y);
+      y += 7;
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      const cats = [['flights', t.cats.flights], ['hotel', t.cats.hotel], ['activities', t.cats.activities], ['food', t.cats.food], ['transport', t.cats.transport]];
+      let total = 0;
+      for (const [k, label] of cats) {
+        const val = result.budget?.[k] || 0;
+        total += val;
+        pdf.setTextColor(80, 80, 80);
+        pdf.text(label, margin + 6, y);
+        pdf.text(`${val}€`, margin + maxW - 6, y, { align: "right" });
+        y += 6;
+      }
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(255, 140, 66);
+      pdf.text("Total", margin + 6, y);
+      pdf.text(`${total}€`, margin + maxW - 6, y, { align: "right" });
+      y += 12;
+
+      // Programme
+      const days = result.stages
+        ? result.stages.flatMap((stage, si) => (stage.days || []).map((d, di) => ({ ...d, stageLabel: `${t.stage} ${si + 1}: ${stage.city}`, dayNum: di + 1 })))
+        : (result.days || []).map((d, i) => ({ ...d, dayNum: i + 1 }));
+
+      if (days.length > 0) {
+        checkPage(20);
+        y += 4;
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(40, 40, 40);
+        pdf.text(result.stages ? t.routeTitle : t.prog, margin, y);
+        y += 8;
+
+        let lastStage = '';
+        for (const day of days) {
+          checkPage(30);
+          if (day.stageLabel && day.stageLabel !== lastStage) {
+            lastStage = day.stageLabel;
+            pdf.setFontSize(11);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(255, 140, 66);
+            pdf.text(day.stageLabel, margin, y);
+            y += 7;
+          }
+          pdf.setFontSize(11);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(40, 40, 40);
+          pdf.text(`${lang === 'fr' ? 'Jour' : 'Day'} ${day.dayNum} — ${day.title || ''}`, margin, y);
+          y += 6;
+          for (const period of ['morning', 'afternoon', 'evening']) {
+            if (!day[period]) continue;
+            checkPage(15);
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "bold");
+            pdf.setTextColor(period === 'morning' ? 196 : period === 'afternoon' ? 255 : 212, period === 'morning' ? 154 : period === 'afternoon' ? 140 : 117, period === 'morning' ? 92 : period === 'afternoon' ? 66 : 107);
+            pdf.text(t.per[period], margin + 4, y);
+            y += 5;
+            pdf.setFontSize(9);
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(80, 80, 80);
+            const lines = pdf.splitTextToSize(day[period], maxW - 8);
+            checkPage(lines.length * 4 + 2);
+            pdf.text(lines, margin + 4, y);
+            y += lines.length * 4 + 3;
+          }
+          y += 3;
+        }
+      }
+
+      // Tips
+      if (result.tips?.length > 0) {
+        checkPage(20);
+        y += 4;
+        pdf.setFontSize(12);
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(46, 173, 122);
+        pdf.text(t.tips, margin, y);
+        y += 7;
+        pdf.setFontSize(9);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(80, 80, 80);
+        for (const tip of result.tips) {
+          checkPage(10);
+          const tipLines = pdf.splitTextToSize(`• ${tip}`, maxW - 4);
+          pdf.text(tipLines, margin + 2, y);
+          y += tipLines.length * 4 + 3;
+        }
+      }
+
+      // Footer
+      checkPage(15);
+      y += 6;
+      pdf.setFontSize(8);
+      pdf.setTextColor(180, 180, 180);
+      pdf.text(`BLEESH — ${lang === 'fr' ? 'Généré le' : 'Generated on'} ${new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}`, margin, y);
+
       pdf.save(`BLEESH-${result.destination?.city || 'voyage'}.pdf`);
     } catch (err) { console.error("PDF export error:", err); }
   };
@@ -530,11 +687,23 @@ export default function App() {
   // Share
   const shareTrip = async () => {
     if (!result) return;
+    // Créer une version allégée du voyage (sans gradient ni détails lourds)
+    const shareData = {
+      destination: { city: result.destination.city, country: result.destination.country, description: result.destination.description },
+      budget: result.budget ? { flights: result.budget.flights, hotel: result.budget.hotel, activities: result.budget.activities, food: result.budget.food, transport: result.budget.transport } : null,
+      days: result.days,
+      stages: result.stages,
+      tips: result.tips,
+      suggestedDates: result.suggestedDates,
+    };
+    const encoded = btoa(JSON.stringify(shareData));
+    const shareUrl = `${window.location.origin}${window.location.pathname}?trip=${encoded}`;
     const text = `${result.destination?.city || ''}, ${result.destination?.country || ''} - BLEESH`;
+
     if (navigator.share) {
-      try { await navigator.share({ title: "BLEESH", text, url: window.location.href }); } catch {}
+      try { await navigator.share({ title: "BLEESH", text, url: shareUrl }); } catch {}
     } else {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     }
