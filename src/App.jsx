@@ -14,7 +14,7 @@ const T = {
     trav: "Voyageurs", trvl: ["1","2","3","4","5+"],
     city: "Départ de", cityPh: "Paris",
     prefs: "Vos envies",
-    p: { beach:"Plage", culture:"Culture", adventure:"Aventure", gastro:"Gastro", nightlife:"Soirées", family:"Famille", ski:"Ski", clubbing:"Clubbing", wellness:"Bien-être", shopping:"Shopping" },
+    p: { beach:"Plage", culture:"Culture", adventure:"Aventure", gastro:"Gastro", nightlife:"Soirées", family:"Famille", ski:"Ski", clubbing:"Clubbing", wellness:"Bien-être" },
     otherPref: "Autre",
     go: "Trouver mon voyage",
     errB: "Entrez un budget (min 100€)", errD: "Choisissez un mois et une durée",
@@ -44,6 +44,20 @@ const T = {
     compare: "Comparer", vsTitle: "Comparaison", closeCompare: "Fermer",
     stage: "Étape", stageNights: "nuit(s)", routeTitle: "Le circuit",
     realPrice: "Prix réel", estPrice: "Estimé",
+    moreOptions: "Plus d'options", lessOptions: "Moins d'options",
+    secEssential: "L'essentiel", secWhen: "Quand partir ?", secCustomize: "Personnaliser",
+    noFlight: "Sans vol", noHotel: "Sans hôtel",
+    continent: "Continent (optionnel)",
+    continents: { any: "Tous", europe: "Europe", asia: "Asie", africa: "Afrique", namerica: "Amérique du Nord", samerica: "Amérique du Sud", oceania: "Océanie" },
+    multiDest: "Villes / étapes souhaitées", multiDestPh: "Ex: Rome, Florence, Venise...",
+    howTitle: "Comment ça marche",
+    howSteps: [
+      { title: "Décrivez votre voyage", desc: "Budget, dates, envies... dites-nous tout en quelques clics." },
+      { title: "L'IA trouve pour vous", desc: "Notre IA analyse des milliers de destinations et vous propose les 3 meilleures." },
+      { title: "Partez l'esprit tranquille", desc: "Itinéraire jour par jour, vrais prix, réservation en un clic." },
+    ],
+    inspireTitle: "Ils sont partis avec BLEESH",
+    startCta: "Planifier mon voyage",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -55,7 +69,7 @@ const T = {
     trav: "Travelers", trvl: ["1","2","3","4","5+"],
     city: "From", cityPh: "Paris",
     prefs: "Your interests",
-    p: { beach:"Beach", culture:"Culture", adventure:"Adventure", gastro:"Food", nightlife:"Nightlife", family:"Family", ski:"Ski", clubbing:"Clubbing", wellness:"Wellness", shopping:"Shopping" },
+    p: { beach:"Beach", culture:"Culture", adventure:"Adventure", gastro:"Food", nightlife:"Nightlife", family:"Family", ski:"Ski", clubbing:"Clubbing", wellness:"Wellness" },
     otherPref: "Other",
     go: "Find my trip",
     errB: "Enter a budget (min 100€)", errD: "Select month and duration",
@@ -85,6 +99,20 @@ const T = {
     compare: "Compare", vsTitle: "Comparison", closeCompare: "Close",
     stage: "Stage", stageNights: "night(s)", routeTitle: "The route",
     realPrice: "Real price", estPrice: "Estimated",
+    moreOptions: "More options", lessOptions: "Less options",
+    secEssential: "The essentials", secWhen: "When to go?", secCustomize: "Customize",
+    noFlight: "No flights", noHotel: "No hotel",
+    continent: "Continent (optional)",
+    continents: { any: "All", europe: "Europe", asia: "Asia", africa: "Africa", namerica: "North America", samerica: "South America", oceania: "Oceania" },
+    multiDest: "Cities / stops wanted", multiDestPh: "E.g.: Rome, Florence, Venice...",
+    howTitle: "How it works",
+    howSteps: [
+      { title: "Describe your trip", desc: "Budget, dates, preferences... tell us everything in a few clicks." },
+      { title: "AI finds for you", desc: "Our AI analyzes thousands of destinations and suggests the 3 best matches." },
+      { title: "Travel with confidence", desc: "Day-by-day itinerary, real prices, one-click booking." },
+    ],
+    inspireTitle: "They traveled with BLEESH",
+    startCta: "Plan my trip",
   }
 };
 
@@ -115,9 +143,6 @@ const PREF_DATA = {
   )},
   wellness: { gradient: "linear-gradient(135deg, #56ab2f, #a8e063)", icon: (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-  )},
-  shopping: { gradient: "linear-gradient(135deg, #f7971e, #ffd200)", icon: (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
   )},
 };
 
@@ -182,7 +207,15 @@ export default function App() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [stageCoords, setStageCoords] = useState([]);
   const [stageImages, setStageImages] = useState({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [noFlight, setNoFlight] = useState(false);
+  const [noHotel, setNoHotel] = useState(false);
+  const [continent, setContinent] = useState("any");
+  const [multiDest, setMultiDest] = useState("");
+  const [showLanding, setShowLanding] = useState(true);
+  const [inspireImages, setInspireImages] = useState({});
   const resultRef = useRef(null);
+  const formRef = useRef(null);
   const t = T[lang];
 
   // Thème clair/sombre
@@ -212,13 +245,24 @@ export default function App() {
   }, [loadingSuggestions, loadingItinerary, t.ldSuggest, t.ldItinerary]);
 
   // Charger une photo de voyage pour le hero
+  const INSPIRE_PLACES = ["Santorini", "Bali", "Kyoto", "Amalfi_Coast", "Maldives", "Swiss_Alps", "Machu_Picchu", "Marrakech"];
   useEffect(() => {
-    const places = ["Santorini", "Bali", "Kyoto", "Amalfi_Coast", "Maldives", "Swiss_Alps", "Machu_Picchu"];
-    const pick = places[Math.floor(Math.random() * places.length)];
+    const pick = INSPIRE_PLACES[Math.floor(Math.random() * INSPIRE_PLACES.length)];
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${pick}`)
       .then(r => r.json())
       .then(d => { if (d.originalimage?.source) setHeroImage(d.originalimage.source); })
       .catch(() => {});
+    // Charger les images d'inspiration pour la landing
+    const shown = ["Santorini", "Kyoto", "Marrakech", "Bali", "Amalfi_Coast", "Machu_Picchu"];
+    shown.forEach(place => {
+      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${place}`)
+        .then(r => r.json())
+        .then(d => {
+          const src = d.originalimage?.source || d.thumbnail?.source;
+          if (src) setInspireImages(prev => ({ ...prev, [place]: src }));
+        })
+        .catch(() => {});
+    });
   }, []);
 
   const fetchDestImage = async (city) => {
@@ -370,6 +414,10 @@ export default function App() {
           lang,
           exactDate,
           customNotes,
+          noFlight,
+          noHotel,
+          continent: continent !== "any" ? continent : undefined,
+          multiDest: multiDest || undefined,
         }),
       });
 
@@ -412,11 +460,15 @@ export default function App() {
             lang,
             exactDate,
             customNotes,
+            noFlight,
+            noHotel,
+            continent: continent !== "any" ? continent : undefined,
+            multiDest: multiDest || undefined,
             chosenCity: suggestion.city,
             chosenCountry: suggestion.country,
           }),
         }),
-        fetch('/api/prices', {
+        noFlight ? Promise.resolve({ ok: false }) : fetch('/api/prices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -500,6 +552,12 @@ export default function App() {
     setComparing([]);
     setShowCompare(false);
     setShowSaved(false);
+    setShowAdvanced(false);
+    setNoFlight(false);
+    setNoHotel(false);
+    setContinent("any");
+    setMultiDest("");
+    setShowLanding(true);
     setStageCoords([]);
     setStageImages({});
     setLdIdx(0);
@@ -770,8 +828,18 @@ export default function App() {
   // Step actuel
   const currentStep = result ? 2 : suggestions ? 1 : 0;
 
-  const inp = { width: "100%", padding: "12px 14px", background: c.input, border: `2px solid ${c.inputBorder}`, borderRadius: "10px", fontSize: "15px", color: c.text, fontFamily: "inherit" };
+  const inp = { width: "100%", padding: "14px 16px", background: c.input, border: `1.5px solid ${c.inputBorder}`, borderRadius: "12px", fontSize: "15px", color: c.text, fontFamily: "inherit", transition: "border-color 0.2s, box-shadow 0.2s" };
   const lbl = { display: "block", marginBottom: "6px", fontSize: "12px", fontWeight: 600, color: c.textSub, textTransform: "uppercase", letterSpacing: "0.5px" };
+  const formCard = {
+    background: isDark ? "rgba(30,30,30,0.8)" : "rgba(255,255,255,0.85)",
+    backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+    borderRadius: "20px", padding: "24px",
+    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`,
+    boxShadow: isDark ? "0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)",
+    transition: "background 0.3s, box-shadow 0.3s",
+  };
+  const secHead = { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" };
+  const secTitle = { fontSize: "15px", fontWeight: 700, color: c.text, letterSpacing: "-0.3px" };
 
   return (
     <div style={{ minHeight: "100vh", background: c.bg, fontFamily: "'Quicksand', system-ui, sans-serif", color: c.text, transition: "background 0.3s, color 0.3s" }}>
@@ -779,11 +847,15 @@ export default function App() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         button { cursor: pointer; font-family: 'Quicksand', sans-serif; }
-        input, select { font-family: 'Quicksand', sans-serif; }
-        input:focus, select:focus { outline: none; border-color: #FF8C42 !important; }
-        .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,140,66,0.35); }
+        input, select, textarea { font-family: 'Quicksand', sans-serif; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #FF8C42 !important; box-shadow: 0 0 0 3px rgba(255,140,66,0.12); }
+        .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,140,66,0.4) !important; }
+        .cta:active { transform: translateY(0); }
         .pick-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .pills-scroll::-webkit-scrollbar { display: none; }
+        .pills-scroll { scrollbar-width: none; }
         @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } }
       `}</style>
 
@@ -1245,63 +1317,180 @@ export default function App() {
 
             {/* HERO */}
             <div style={{
-              margin: "0 -20px", position: "relative", height: "280px", overflow: "hidden",
+              margin: "0 -20px", position: "relative", height: "340px", overflow: "hidden",
               background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
             }}>
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.15) 100%)" }} />
-              <div style={{ position: "absolute", bottom: "32px", left: "24px", right: "24px", zIndex: 1 }}>
-                <h1 style={{ fontSize: "clamp(40px, 10vw, 56px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "10px", letterSpacing: "-1px", textShadow: "0 2px 12px rgba(0,0,0,0.4)" }}>BLEESH</h1>
-                <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.9)", fontWeight: 500, textShadow: "0 1px 6px rgba(0,0,0,0.3)" }}>{t.slogan}</p>
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.8) 100%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(255,140,66,0.15) 0%, rgba(139,92,246,0.1) 50%, rgba(232,99,124,0.15) 100%)", opacity: 0.6 }} />
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }} />
+              <div style={{ position: "absolute", bottom: "40px", left: "28px", right: "28px", zIndex: 1 }}>
+                <h1 style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "12px", letterSpacing: "-2px", textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>BLEESH</h1>
+                <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.92)", fontWeight: 500, textShadow: "0 2px 8px rgba(0,0,0,0.4)", lineHeight: 1.5, maxWidth: "320px" }}>{t.slogan}</p>
+                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 400, marginTop: "6px" }}>{t.sub}</p>
               </div>
             </div>
 
-            <div style={{ height: "24px" }} />
+            {showLanding ? (
+              /* ===== LANDING SECTION ===== */
+              <div style={{ animation: "fadeUp 0.5s ease" }}>
 
-            {/* FORM */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lbl}>{t.budget}</label>
-                  <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder={t.budgetPh} style={inp} />
+                {/* HOW IT WORKS */}
+                <div style={{ padding: "48px 0 40px" }}>
+                  <h2 style={{ fontSize: "22px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "32px", letterSpacing: "-0.5px" }}>{t.howTitle}</h2>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                    {t.howSteps.map((step, i) => (
+                      <div key={i} style={{ display: "flex", gap: "16px", alignItems: "flex-start", animation: `fadeUp 0.4s ease ${i * 0.12}s both` }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                          background: i === 0 ? "linear-gradient(135deg, #FF8C42, #E8637C)" : i === 1 ? "linear-gradient(135deg, #8E2DE2, #4A00E0)" : "linear-gradient(135deg, #11998E, #38EF7D)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        }}>
+                          {i === 0 ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          ) : i === 1 ? (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                          ) : (
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                          )}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "15px", fontWeight: 700, color: c.text, marginBottom: "4px" }}>{step.title}</div>
+                          <div style={{ fontSize: "13px", color: c.textMuted, lineHeight: 1.6 }}>{step.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label style={lbl}>{t.trav}</label>
-                  <select value={trav} onChange={e => setTrav(+e.target.value)} style={{ ...inp, appearance: "none" }}>
-                    {t.trvl.map((l, i) => <option key={i} value={i + 1}>{l}</option>)}
-                  </select>
+
+                {/* INSPIRATION GALLERY */}
+                <div style={{ marginBottom: "40px" }}>
+                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "20px", letterSpacing: "-0.3px" }}>{t.inspireTitle}</h2>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                    {["Santorini", "Kyoto", "Marrakech", "Bali", "Amalfi_Coast", "Machu_Picchu"].map((place, i) => (
+                      <div key={place} style={{
+                        position: "relative", borderRadius: "14px", overflow: "hidden",
+                        height: i < 3 ? "130px" : "100px",
+                        background: inspireImages[place] ? `url(${inspireImages[place]}) center/cover no-repeat` : DEST_GRADIENTS[i % DEST_GRADIENTS.length],
+                        animation: `fadeUp 0.4s ease ${i * 0.08}s both`,
+                      }}>
+                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.05) 60%)" }} />
+                        <span style={{ position: "absolute", bottom: "8px", left: "10px", fontSize: "11px", fontWeight: 700, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                          {place.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* CTA */}
+                <button className="cta" onClick={() => { setShowLanding(false); window.scrollTo(0, 0); }} style={{
+                  width: "100%", padding: "18px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
+                  border: "none", borderRadius: "16px", color: "#fff", fontSize: "17px", fontWeight: 700,
+                  letterSpacing: "-0.3px", transition: "all 0.3s ease",
+                  boxShadow: "0 4px 20px rgba(255,140,66,0.35)", marginBottom: "20px",
+                }}>{t.startCta}</button>
+              </div>
+            ) : (
+              /* ===== FORM ===== */
+              <div style={{ animation: "fadeUp 0.4s ease" }}>
+
+              <div style={{ height: "28px" }} />
+
+              {/* FORM */}
+              <div ref={formRef} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+              {/* CARD 1: L'essentiel */}
+              <div style={formCard}>
+                <div style={secHead}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #FF8C42, #E8637C)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                  </div>
+                  <span style={secTitle}>{t.secEssential}</span>
+                </div>
+                <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "14px" }}>
+                  <div>
+                    <label style={lbl}>{t.budget}</label>
+                    <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder={t.budgetPh} style={inp} />
+                  </div>
+                  <div>
+                    <label style={lbl}>{t.trav}</label>
+                    <select value={trav} onChange={e => setTrav(+e.target.value)} style={{ ...inp, appearance: "none" }}>
+                      {t.trvl.map((l, i) => <option key={i} value={i + 1}>{l}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={lbl}>{t.city}</label>
+                  <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {[{ key: "noFlight", val: noFlight, set: setNoFlight, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/><line x1="2" y1="2" x2="22" y2="22"/></svg> },
+                    { key: "noHotel", val: noHotel, set: setNoHotel, icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 21v-4h6v4"/><line x1="2" y1="2" x2="22" y2="22"/></svg> },
+                  ].map(({ key, val, set, icon }) => (
+                    <button key={key} onClick={() => set(!val)} style={{
+                      flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                      padding: "10px 12px", borderRadius: "12px", fontSize: "12px", fontWeight: 600,
+                      border: val ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}`,
+                      background: val ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input,
+                      color: val ? "#FF8C42" : c.textMuted, transition: "all 0.2s",
+                    }}>
+                      {icon} {t[key]}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lbl}>{t.month}</label>
-                  <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? c.text : "#bbb" }}>
-                    <option value="">—</option>
-                    {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                  </select>
+              {/* CARD 2: Quand partir */}
+              <div style={formCard}>
+                <div style={secHead}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #3EC1D3, #185A9D)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </div>
+                  <span style={secTitle}>{t.secWhen}</span>
                 </div>
-                <div>
-                  <label style={lbl}>{t.dur}</label>
-                  <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? c.text : "#bbb" }}>
-                    <option value="">—</option>
-                    {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                  </select>
+                <div className="g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div>
+                    <label style={lbl}>{t.month}</label>
+                    <select value={month} onChange={e => setMonth(e.target.value)} style={{ ...inp, appearance: "none", color: month !== "" ? c.text : "#bbb" }}>
+                      <option value="">—</option>
+                      {t.months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lbl}>{t.dur}</label>
+                    <select value={dur} onChange={e => setDur(e.target.value)} style={{ ...inp, appearance: "none", color: dur !== "" ? c.text : "#bbb" }}>
+                      <option value="">—</option>
+                      {t.durs.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginTop: "14px" }}>
+                  <label style={lbl}>{t.continent}</label>
+                  <div className="pills-scroll" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", WebkitOverflowScrolling: "touch" }}>
+                    {Object.entries(t.continents).map(([k, label]) => (
+                      <button key={k} onClick={() => setContinent(k)} style={{
+                        padding: "8px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
+                        whiteSpace: "nowrap", flexShrink: 0,
+                        border: continent === k ? "2px solid #3EC1D3" : `2px solid ${c.inputBorder}`,
+                        background: continent === k ? (isDark ? "#1A2A2E" : "#E8F8FA") : c.input,
+                        color: continent === k ? "#3EC1D3" : c.textMuted, transition: "all 0.2s",
+                      }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label style={lbl}>{t.exactDate}</label>
-                <input type="date" value={exactDate} onChange={e => setExactDate(e.target.value)} style={{ ...inp, color: exactDate ? c.text : "#bbb" }} />
-              </div>
-
-              <div>
-                <label style={lbl}>{t.city}</label>
-                <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder={t.cityPh} style={inp} />
-              </div>
-
-              {/* PREFS */}
-              <div>
-                <label style={{ ...lbl, marginBottom: "10px" }}>{t.prefs}</label>
+              {/* CARD 3: Vos envies */}
+              <div style={formCard}>
+                <div style={secHead}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #8E2DE2, #4A00E0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </div>
+                  <span style={secTitle}>{t.prefs}</span>
+                </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
                   {Object.entries(PREF_DATA).map(([k, data]) => {
                     const sel = prefs.includes(k);
@@ -1310,9 +1499,9 @@ export default function App() {
                         position: "relative", borderRadius: "12px", overflow: "hidden",
                         border: sel ? "3px solid #FF8C42" : "3px solid transparent",
                         height: "80px", padding: 0, background: data.gradient,
-                        transition: "all 0.2s", display: "flex", flexDirection: "column",
+                        transition: "all 0.25s ease", display: "flex", flexDirection: "column",
                         alignItems: "center", justifyContent: "center", gap: "4px",
-                        opacity: sel ? 1 : 0.75,
+                        opacity: sel ? 1 : 0.7, transform: sel ? "scale(1.02)" : "scale(1)",
                       }}>
                         {sel && <div style={{ position: "absolute", inset: 0, background: "rgba(255,140,66,0.2)" }} />}
                         <div style={{ position: "relative", zIndex: 1 }}>{data.icon}</div>
@@ -1324,25 +1513,21 @@ export default function App() {
                     );
                   })}
                 </div>
-                {/* Bouton "Autre" */}
-                <div style={{ marginTop: "8px" }}>
-                  <input
-                    type="text"
-                    value={otherPrefText}
-                    onChange={e => setOtherPrefText(e.target.value)}
-                    placeholder={t.otherPrefPh}
-                    style={{ ...inp, background: otherPrefText ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input, border: otherPrefText ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}` }}
-                  />
-                </div>
               </div>
 
-              {/* TYPE DE VOYAGE */}
-              <div>
-                <label style={{ ...lbl, marginBottom: "10px" }}>{t.tripType}</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "8px" }}>
+              {/* CARD 4: Type de voyage (pills horizontales) */}
+              <div style={formCard}>
+                <div style={secHead}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #FC5C7D, #6A82FB)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  </div>
+                  <span style={secTitle}>{t.tripType}</span>
+                </div>
+                <div className="pills-scroll" style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px", WebkitOverflowScrolling: "touch" }}>
                   {Object.entries(t.types).map(([k, label]) => (
                     <button key={k} onClick={() => setTripType(k)} style={{
-                      padding: "12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
+                      padding: "10px 18px", borderRadius: "24px", fontSize: "13px", fontWeight: 600,
+                      whiteSpace: "nowrap", flexShrink: 0,
                       border: tripType === k ? "2px solid #FF8C42" : `2px solid ${c.inputBorder}`,
                       background: tripType === k ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input,
                       color: tripType === k ? "#FF8C42" : c.textMuted,
@@ -1352,27 +1537,71 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+                {tripType === "roadtrip" && (
+                  <div style={{ marginTop: "14px", animation: "slideDown 0.3s ease" }}>
+                    <label style={lbl}>{t.multiDest}</label>
+                    <input type="text" value={multiDest} onChange={e => setMultiDest(e.target.value)} placeholder={t.multiDestPh}
+                      style={{ ...inp, background: multiDest ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input, border: multiDest ? "1.5px solid #FF8C42" : `1.5px solid ${c.inputBorder}` }} />
+                  </div>
+                )}
               </div>
 
-              {/* NOTES PERSONNALISÉES */}
-              <div>
-                <label style={lbl}>{t.customNotes}</label>
-                <textarea
-                  value={customNotes}
-                  onChange={e => setCustomNotes(e.target.value)}
-                  placeholder={t.customNotesPh}
-                  rows={3}
-                  style={{ ...inp, resize: "vertical", lineHeight: 1.6 }}
-                />
-              </div>
+              {/* Bouton options avancées */}
+              <button onClick={() => setShowAdvanced(!showAdvanced)} style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                padding: "14px", background: "transparent",
+                border: `1.5px dashed ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"}`,
+                borderRadius: "16px", color: c.textSub, fontSize: "13px", fontWeight: 600,
+                transition: "all 0.2s",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ transition: "transform 0.3s ease", transform: showAdvanced ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                {showAdvanced ? t.lessOptions : t.moreOptions}
+              </button>
 
-              {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600 }}>{error}</div>}
+              {/* Section pliable */}
+              {showAdvanced && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", animation: "slideDown 0.3s ease" }}>
+                  <div style={formCard}>
+                    <div style={secHead}>
+                      <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #56ab2f, #a8e063)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                      </div>
+                      <span style={secTitle}>{t.secCustomize}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                      <div>
+                        <label style={lbl}>{t.exactDate}</label>
+                        <input type="date" value={exactDate} onChange={e => setExactDate(e.target.value)} style={{ ...inp, color: exactDate ? c.text : "#bbb" }} />
+                      </div>
+                      <div>
+                        <label style={lbl}>{t.otherPref}</label>
+                        <input type="text" value={otherPrefText} onChange={e => setOtherPrefText(e.target.value)} placeholder={t.otherPrefPh}
+                          style={{ ...inp, background: otherPrefText ? (isDark ? "#3A2A1A" : "#FFF4ED") : c.input, border: otherPrefText ? "1.5px solid #FF8C42" : `1.5px solid ${c.inputBorder}` }} />
+                      </div>
+                      <div>
+                        <label style={lbl}>{t.customNotes}</label>
+                        <textarea value={customNotes} onChange={e => setCustomNotes(e.target.value)} placeholder={t.customNotesPh} rows={3}
+                          style={{ ...inp, resize: "vertical", lineHeight: 1.6 }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {error && <div style={{ background: c.errorBg, borderRadius: "14px", padding: "12px 18px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, border: `1px solid ${isDark ? "rgba(229,85,85,0.2)" : "rgba(229,85,85,0.15)"}` }}>{error}</div>}
 
               <button className="cta" onClick={findSuggestions} disabled={loadingSuggestions} style={{
-                width: "100%", padding: "16px", background: "#FF8C42", border: "none", borderRadius: "12px",
-                color: "#fff", fontSize: "16px", fontWeight: 700, transition: "all 0.2s", opacity: loadingSuggestions ? 0.6 : 1,
+                width: "100%", padding: "18px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
+                border: "none", borderRadius: "16px", color: "#fff", fontSize: "17px", fontWeight: 700,
+                letterSpacing: "-0.3px", transition: "all 0.3s ease", opacity: loadingSuggestions ? 0.6 : 1,
+                boxShadow: "0 4px 20px rgba(255,140,66,0.35)",
               }}>{t.go}</button>
             </div>
+              </div>
+            )}
           </div>
         )}
       </main>

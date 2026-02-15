@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   try {
-    const { budget, travelers, month, duration, city, preferences, tripType, lang, exactDate, customNotes } = req.body;
+    const { budget, travelers, month, duration, city, preferences, tripType, lang, exactDate, customNotes, noFlight, noHotel, continent, multiDest } = req.body;
 
     const isFr = lang === 'fr';
     const months = isFr
@@ -38,6 +38,10 @@ export default async function handler(req, res) {
 - Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
 ${exactDate ? `- Date exacte de départ : ${exactDate}` : ''}
 ${customNotes ? `- Demandes spéciales : ${customNotes}` : ''}
+${noFlight ? '- PAS DE VOL : le voyageur se déplace par ses propres moyens (voiture, train, etc.)' : ''}
+${noHotel ? "- PAS D'HÔTEL : le voyageur a son propre hébergement (ne pas inclure de frais d'hôtel)" : ''}
+${continent ? `- Continent souhaité : ${continent}` : ''}
+${multiDest ? `- Villes/étapes souhaitées par le voyageur : ${multiDest}` : ''}
 
 IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
 {
@@ -59,6 +63,10 @@ Règles :
 - Les destinations doivent être réalistes et accessibles depuis ${city || 'Paris'}
 - Varie les styles : une destination classique, une originale, une surprenante
 ${tripType === 'roadtrip' ? '- Type road trip : propose des parcours avec plusieurs étapes/villes' : ''}
+${noFlight ? '- Sans vol : propose des destinations accessibles en voiture/train depuis ' + (city || 'Paris') + ', estimatedBudget sans frais de vol' : ''}
+${noHotel ? "- Sans hôtel : le budget ne doit pas inclure d'hébergement" : ''}
+${continent ? '- Toutes les destinations doivent être en ' + continent : ''}
+${multiDest ? '- Intègre ces villes/étapes dans les propositions : ' + multiDest : ''}
 - Pour suggestedDates : ${exactDate ? 'utilise la date exacte fournie' : 'propose les meilleures dates dans le mois indiqué'}`
       : `You are a travel expert. Propose exactly 3 DIFFERENT destinations (in different countries) for a trip with these criteria:
 - Total budget: ${budget}€
@@ -70,6 +78,10 @@ ${tripType === 'roadtrip' ? '- Type road trip : propose des parcours avec plusie
 - Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
 ${exactDate ? `- Exact departure date: ${exactDate}` : ''}
 ${customNotes ? `- Special requests: ${customNotes}` : ''}
+${noFlight ? '- NO FLIGHTS: traveler has own transport (car, train, etc.)' : ''}
+${noHotel ? '- NO HOTEL: traveler has own accommodation (do not include hotel costs)' : ''}
+${continent ? `- Preferred continent: ${continent}` : ''}
+${multiDest ? `- Cities/stops requested by the traveler: ${multiDest}` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
 {
@@ -91,6 +103,10 @@ Rules:
 - Destinations must be realistic and accessible from ${city || 'Paris'}
 - Vary the styles: one classic, one original, one surprising
 ${tripType === 'roadtrip' ? '- Road trip type: suggest routes with multiple stops/cities' : ''}
+${noFlight ? '- No flights: suggest destinations reachable by car/train from ' + (city || 'Paris') + ', estimatedBudget without flight costs' : ''}
+${noHotel ? '- No hotel: budget should not include accommodation costs' : ''}
+${continent ? '- All destinations must be in ' + continent : ''}
+${multiDest ? '- Incorporate these cities/stops in the proposals: ' + multiDest : ''}
 - For suggestedDates: ${exactDate ? 'use the exact date provided' : 'suggest the best dates within the indicated month'}`;
 
     const response = await fetch(

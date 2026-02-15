@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   if (!API_KEY) return res.status(500).json({ error: 'API key not configured' });
 
   try {
-    const { budget, travelers, month, duration, city, preferences, tripType, lang, chosenCity, chosenCountry, exactDate, customNotes } = req.body;
+    const { budget, travelers, month, duration, city, preferences, tripType, lang, chosenCity, chosenCountry, exactDate, customNotes, noFlight, noHotel, continent, multiDest } = req.body;
 
     const isFr = lang === 'fr';
     const months = isFr
@@ -41,6 +41,9 @@ export default async function handler(req, res) {
 - Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
 ${exactDate ? `- Date exacte de départ : ${exactDate}` : ''}
 ${customNotes ? `- Demandes spéciales : ${customNotes}` : ''}
+${noFlight ? '- PAS DE VOL : déplacement en voiture/train, mettre "flights": 0 dans le budget' : ''}
+${noHotel ? "- PAS D'HÔTEL : hébergement propre, mettre \"hotel\": 0 dans le budget" : ''}
+${multiDest ? `- Villes/étapes souhaitées par le voyageur : ${multiDest}. Intègre ces villes dans le circuit.` : ''}
 ${chosenCity ? `- Région/pays de départ du road trip : ${chosenCity}, ${chosenCountry}. Le circuit doit commencer dans cette zone.` : ''}
 
 IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
@@ -95,6 +98,8 @@ ${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "sugges
 - Préférences : ${preferences?.length ? preferences.join(', ') : 'aucune en particulier'}
 ${exactDate ? `- Date exacte de départ : ${exactDate}` : ''}
 ${customNotes ? `- Demandes spéciales : ${customNotes}` : ''}
+${noFlight ? '- PAS DE VOL : déplacement en voiture/train, mettre "flights": 0 dans le budget' : ''}
+${noHotel ? "- PAS D'HÔTEL : hébergement propre, mettre \"hotel\": 0 dans le budget" : ''}
 ${chosenCity ? `- Destination IMPOSÉE : ${chosenCity}, ${chosenCountry}. Tu DOIS faire le voyage pour cette ville.` : ''}
 
 IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans backticks. Le JSON doit suivre exactement cette structure :
@@ -141,6 +146,9 @@ ${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "sugges
 - Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
 ${exactDate ? `- Exact departure date: ${exactDate}` : ''}
 ${customNotes ? `- Special requests: ${customNotes}` : ''}
+${noFlight ? '- NO FLIGHTS: travel by car/train, set "flights": 0 in budget' : ''}
+${noHotel ? '- NO HOTEL: own accommodation, set "hotel": 0 in budget' : ''}
+${multiDest ? `- Cities/stops requested by traveler: ${multiDest}. Incorporate these cities into the circuit.` : ''}
 ${chosenCity ? `- Road trip starting region/country: ${chosenCity}, ${chosenCountry}. The circuit should start in this area.` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
@@ -195,6 +203,8 @@ ${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`
 - Preferences: ${preferences?.length ? preferences.join(', ') : 'none in particular'}
 ${exactDate ? `- Exact departure date: ${exactDate}` : ''}
 ${customNotes ? `- Special requests: ${customNotes}` : ''}
+${noFlight ? '- NO FLIGHTS: travel by car/train, set "flights": 0 in budget' : ''}
+${noHotel ? '- NO HOTEL: own accommodation, set "hotel": 0 in budget' : ''}
 ${chosenCity ? `- REQUIRED destination: ${chosenCity}, ${chosenCountry}. You MUST plan the trip for this city.` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. The JSON must follow exactly this structure:
