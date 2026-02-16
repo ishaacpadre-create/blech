@@ -6,7 +6,7 @@ import L from "leaflet";
 const T = {
   fr: {
     slogan: "Votre prochain voyage commence ici",
-    sub: "Donnez votre budget, l'IA trouve la destination parfaite.",
+    sub: "Donnez votre budget, nous trouvons la destination parfaite.",
     budget: "Budget (€)", budgetPh: "1500",
     month: "Mois", dur: "Durée",
     months: ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
@@ -53,7 +53,7 @@ const T = {
     howTitle: "Comment ça marche",
     howSteps: [
       { title: "Décrivez votre voyage", desc: "Budget, dates, envies... dites-nous tout en quelques clics." },
-      { title: "L'IA trouve pour vous", desc: "Notre IA analyse des milliers de destinations et vous propose les 3 meilleures." },
+      { title: "Nous trouvons pour vous", desc: "Nous analysons des milliers de destinations et vous proposons les 3 meilleures." },
       { title: "Partez l'esprit tranquille", desc: "Itinéraire jour par jour, vrais prix, réservation en un clic." },
     ],
     inspireTitle: "Ils sont partis avec BLESH",
@@ -61,7 +61,7 @@ const T = {
   },
   en: {
     slogan: "Your next trip starts here",
-    sub: "Give us your budget, AI finds the perfect destination.",
+    sub: "Give us your budget, we find the perfect destination.",
     budget: "Budget (€)", budgetPh: "1500",
     month: "Month", dur: "Duration",
     months: ["January","February","March","April","May","June","July","August","September","October","November","December"],
@@ -108,7 +108,7 @@ const T = {
     howTitle: "How it works",
     howSteps: [
       { title: "Describe your trip", desc: "Budget, dates, preferences... tell us everything in a few clicks." },
-      { title: "AI finds for you", desc: "Our AI analyzes thousands of destinations and suggests the 3 best matches." },
+      { title: "We find for you", desc: "We analyze thousands of destinations and suggest the 3 best matches." },
       { title: "Travel with confidence", desc: "Day-by-day itinerary, real prices, one-click booking." },
     ],
     inspireTitle: "They traveled with BLESH",
@@ -1724,7 +1724,7 @@ export default function App() {
           <span style={{ fontSize: "15px", fontWeight: 700, background: "linear-gradient(135deg, #FF8C42, #E8637C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>BLESH</span>
         </div>
         <p style={{ fontSize: "12px", color: c.textMuted, lineHeight: 1.6 }}>
-          {lang === 'fr' ? "Ton voyage parfait, propulsé par l'IA" : "Your perfect trip, powered by AI"}
+          {lang === 'fr' ? "Ton voyage parfait, trouvé par nous" : "Your perfect trip, found by us"}
         </p>
         <p style={{ fontSize: "11px", color: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)", marginTop: "12px" }}>
           © 2025 BLESH
