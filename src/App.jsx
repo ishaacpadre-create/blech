@@ -179,6 +179,23 @@ const DEST_GRADIENTS = [
   "linear-gradient(135deg, #11998E 0%, #38EF7D 100%)",
 ];
 
+// Images Unsplash haute qualité pour la landing page
+const LANDING_IMAGES = {
+  Santorini: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=400&q=80",
+  Kyoto: "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?auto=format&fit=crop&w=400&q=80",
+  Marrakech: "https://images.unsplash.com/photo-1597212618440-806262de4f6b?auto=format&fit=crop&w=400&q=80",
+  Bali: "https://images.unsplash.com/photo-1557093793-d149a38a1be8?auto=format&fit=crop&w=400&q=80",
+  Amalfi_Coast: "https://images.unsplash.com/photo-1533656338503-b22f63e96cd8?auto=format&fit=crop&w=400&q=80",
+  Machu_Picchu: "https://images.unsplash.com/photo-1497106636505-e4fd6e16d74c?auto=format&fit=crop&w=400&q=80",
+};
+
+const HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1533656338503-b22f63e96cd8?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1557093793-d149a38a1be8?auto=format&fit=crop&w=1200&q=80",
+  "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?auto=format&fit=crop&w=1200&q=80",
+];
+
 const HERO_GRADIENT = "linear-gradient(135deg, #FF8C42 0%, #E8637C 50%, #8B5CF6 100%)";
 
 // Fix icône Leaflet par défaut
@@ -260,25 +277,10 @@ export default function App() {
     return () => clearInterval(iv);
   }, [loadingSuggestions, loadingItinerary, t.ldSuggest, t.ldItinerary]);
 
-  // Charger une photo de voyage pour le hero
-  const INSPIRE_PLACES = ["Santorini", "Bali", "Kyoto", "Amalfi_Coast", "Maldives", "Swiss_Alps", "Machu_Picchu", "Marrakech"];
+  // Images Unsplash pour le hero et les destinations
   useEffect(() => {
-    const pick = INSPIRE_PLACES[Math.floor(Math.random() * INSPIRE_PLACES.length)];
-    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${pick}`)
-      .then(r => r.json())
-      .then(d => { if (d.originalimage?.source) setHeroImage(d.originalimage.source); })
-      .catch(() => {});
-    // Charger les images d'inspiration pour la landing
-    const shown = ["Santorini", "Kyoto", "Marrakech", "Bali", "Amalfi_Coast", "Machu_Picchu"];
-    shown.forEach(place => {
-      fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${place}`)
-        .then(r => r.json())
-        .then(d => {
-          const src = d.originalimage?.source || d.thumbnail?.source;
-          if (src) setInspireImages(prev => ({ ...prev, [place]: src }));
-        })
-        .catch(() => {});
-    });
+    setHeroImage(HERO_IMAGES[Math.floor(Math.random() * HERO_IMAGES.length)]);
+    setInspireImages(LANDING_IMAGES);
   }, []);
 
   const fetchDestImage = async (city) => {
