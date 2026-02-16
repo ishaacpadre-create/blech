@@ -1526,7 +1526,7 @@ export default function App() {
               </div>
 
               {/* FORM */}
-              <div ref={formRef} className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div ref={formRef} className="form-grid" style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: "20px" }}>
 
               {/* CARD 1: L'essentiel */}
               <div style={formCard}>
