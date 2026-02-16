@@ -882,7 +882,8 @@ export default function App() {
         .pick-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
         .pills-scroll::-webkit-scrollbar { display: none; }
         .pills-scroll { scrollbar-width: none; }
-        @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } }
+        @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } .form-grid { grid-template-columns: 1fr !important; } .suggestions-grid { grid-template-columns: 1fr !important; } }
+        @media(min-width:601px) { .pref-grid { grid-template-columns: repeat(5, 1fr) !important; } }
       `}</style>
 
       {/* LOADING */}
@@ -931,7 +932,7 @@ export default function App() {
 
       {/* STEPPER */}
       {(suggestions || result) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", padding: "16px 24px 0", maxWidth: "400px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", padding: "16px 24px 0", maxWidth: "500px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           {t.steps.map((label, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", flex: i < 2 ? 1 : "none" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
@@ -953,7 +954,7 @@ export default function App() {
         </div>
       )}
 
-      <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px", position: "relative", zIndex: 1 }}>
+      <main style={{ maxWidth: "900px", margin: "0 auto", padding: "0 24px 60px", position: "relative", zIndex: 1 }}>
 
         {result ? (
           /* ===== RESULTS ===== */
@@ -961,7 +962,7 @@ export default function App() {
 
             {/* DESTINATION HERO */}
             <div style={{
-              margin: "0 -20px", position: "relative", height: "320px", overflow: "hidden",
+              margin: "0 -24px", position: "relative", height: "320px", overflow: "hidden",
               background: destImage ? `url(${destImage}) center/cover no-repeat` : (result.destination.gradient || DEST_GRADIENTS[0]),
             }}>
               <div style={{ position: "absolute", inset: 0, background: destImage ? "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.1) 100%)" : "none" }} />
@@ -1278,11 +1279,12 @@ export default function App() {
             {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, marginBottom: "20px" }}>{error}</div>}
 
             {/* Cartes de destination */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div className="suggestions-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
               {suggestions.map((s, i) => (
                 <div key={i} className="pick-card" style={{
                   background: c.card, borderRadius: "16px", overflow: "hidden", boxShadow: c.shadow,
                   animation: `fadeUp 0.4s ease ${i * 0.12}s both`, transition: "all 0.3s",
+                  display: "flex", flexDirection: "column",
                 }}>
                   {/* Image */}
                   <div style={{
@@ -1355,7 +1357,7 @@ export default function App() {
 
                 {/* HERO FULLSCREEN */}
                 <div style={{
-                  margin: "0 -20px", position: "relative", height: "85vh", minHeight: "500px", maxHeight: "700px", overflow: "hidden",
+                  margin: "0 -24px", position: "relative", height: "85vh", minHeight: "500px", maxHeight: "700px", overflow: "hidden",
                   background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
                 }}>
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.75) 100%)" }} />
@@ -1387,7 +1389,7 @@ export default function App() {
 
                 {/* STATS BAR */}
                 <div style={{
-                  display: "flex", justifyContent: "center", gap: "0", margin: "0 -20px",
+                  display: "flex", justifyContent: "center", gap: "0", margin: "0 -24px",
                   background: isDark ? "rgba(255,140,66,0.08)" : "rgba(255,140,66,0.05)",
                   borderBottom: `1px solid ${isDark ? "rgba(255,140,66,0.12)" : "rgba(255,140,66,0.1)"}`,
                   padding: "20px 0",
@@ -1439,7 +1441,7 @@ export default function App() {
                 {/* DESTINATIONS POPULAIRES - Scroll horizontal */}
                 <div style={{ marginBottom: "40px" }}>
                   <h2 style={{ fontSize: "20px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "20px", letterSpacing: "-0.3px" }}>{t.inspireTitle}</h2>
-                  <div className="pills-scroll" style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "4px 0 16px", margin: "0 -20px", paddingLeft: "20px", paddingRight: "20px", WebkitOverflowScrolling: "touch" }}>
+                  <div className="pills-scroll" style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "4px 0 16px", margin: "0 -24px", paddingLeft: "20px", paddingRight: "20px", WebkitOverflowScrolling: "touch" }}>
                     {["Santorini", "Kyoto", "Marrakech", "Bali", "Amalfi_Coast", "Machu_Picchu"].map((place, i) => (
                       <div key={place} style={{
                         position: "relative", borderRadius: "18px", overflow: "hidden", flexShrink: 0,
@@ -1524,7 +1526,7 @@ export default function App() {
               </div>
 
               {/* FORM */}
-              <div ref={formRef} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div ref={formRef} className="form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
 
               {/* CARD 1: L'essentiel */}
               <div style={formCard}>
@@ -1610,14 +1612,14 @@ export default function App() {
               </div>
 
               {/* CARD 3: Vos envies */}
-              <div style={formCard}>
+              <div style={{ ...formCard, gridColumn: "1 / -1" }}>
                 <div style={secHead}>
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #8E2DE2, #4A00E0)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                   </div>
                   <span style={secTitle}>{t.prefs}</span>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                <div className="pref-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
                   {Object.entries(PREF_DATA).map(([k, data]) => {
                     const sel = prefs.includes(k);
                     return (
@@ -1642,7 +1644,7 @@ export default function App() {
               </div>
 
               {/* CARD 4: Type de voyage (pills horizontales) */}
-              <div style={formCard}>
+              <div style={{ ...formCard, gridColumn: "1 / -1" }}>
                 <div style={secHead}>
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #FC5C7D, #6A82FB)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -1674,6 +1676,7 @@ export default function App() {
 
               {/* Bouton options avancées */}
               <button onClick={() => setShowAdvanced(!showAdvanced)} style={{
+                gridColumn: "1 / -1",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                 padding: "14px", background: "transparent",
                 border: `1.5px dashed ${isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)"}`,
@@ -1689,7 +1692,7 @@ export default function App() {
 
               {/* Section pliable */}
               {showAdvanced && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px", animation: "slideDown 0.3s ease" }}>
+                <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "20px", animation: "slideDown 0.3s ease" }}>
                   <div style={formCard}>
                     <div style={secHead}>
                       <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #56ab2f, #a8e063)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1717,9 +1720,10 @@ export default function App() {
                 </div>
               )}
 
-              {error && <div style={{ background: c.errorBg, borderRadius: "14px", padding: "12px 18px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, border: `1px solid ${isDark ? "rgba(229,85,85,0.2)" : "rgba(229,85,85,0.15)"}` }}>{error}</div>}
+              {error && <div style={{ gridColumn: "1 / -1", background: c.errorBg, borderRadius: "14px", padding: "12px 18px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, border: `1px solid ${isDark ? "rgba(229,85,85,0.2)" : "rgba(229,85,85,0.15)"}` }}>{error}</div>}
 
               <button className="cta" onClick={findSuggestions} disabled={loadingSuggestions} style={{
+                gridColumn: "1 / -1",
                 width: "100%", padding: "18px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
                 border: "none", borderRadius: "16px", color: "#fff", fontSize: "17px", fontWeight: 700,
                 letterSpacing: "-0.3px", transition: "all 0.3s ease", opacity: loadingSuggestions ? 0.6 : 1,
