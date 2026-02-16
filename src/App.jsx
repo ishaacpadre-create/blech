@@ -56,8 +56,16 @@ const T = {
       { title: "Nous trouvons pour vous", desc: "Nous analysons des milliers de destinations et vous proposons les 3 meilleures." },
       { title: "Partez l'esprit tranquille", desc: "Itinéraire jour par jour, vrais prix, réservation en un clic." },
     ],
-    inspireTitle: "Ils sont partis avec BLESH",
+    inspireTitle: "Destinations populaires",
     startCta: "Planifier mon voyage",
+    statsTrips: "voyages planifiés", statsCountries: "pays couverts", statsRating: "de satisfaction",
+    testimonials: [
+      { name: "Marie L.", text: "On a découvert la Croatie grâce à BLESH, tout était parfait !", loc: "Paris" },
+      { name: "Thomas D.", text: "Road trip en Écosse organisé en 2 min. Incroyable.", loc: "Lyon" },
+      { name: "Sofia R.", text: "Le meilleur outil pour voyager sans se prendre la tête.", loc: "Bruxelles" },
+    ],
+    ctaTitle: "Prêt à partir ?",
+    ctaSub: "Créez votre voyage sur mesure en moins de 2 minutes.",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -111,8 +119,16 @@ const T = {
       { title: "We find for you", desc: "We analyze thousands of destinations and suggest the 3 best matches." },
       { title: "Travel with confidence", desc: "Day-by-day itinerary, real prices, one-click booking." },
     ],
-    inspireTitle: "They traveled with BLESH",
+    inspireTitle: "Popular destinations",
     startCta: "Plan my trip",
+    statsTrips: "trips planned", statsCountries: "countries covered", statsRating: "satisfaction",
+    testimonials: [
+      { name: "Marie L.", text: "We discovered Croatia thanks to BLESH, everything was perfect!", loc: "Paris" },
+      { name: "Thomas D.", text: "Scotland road trip planned in 2 min. Incredible.", loc: "London" },
+      { name: "Sofia R.", text: "The best tool to travel without the hassle.", loc: "Brussels" },
+    ],
+    ctaTitle: "Ready to go?",
+    ctaSub: "Create your custom trip in less than 2 minutes.",
   }
 };
 
@@ -1333,47 +1349,86 @@ export default function App() {
           /* ===== FORM ===== */
           <div style={{ animation: "fadeUp 0.4s ease" }}>
 
-            {/* HERO */}
-            <div style={{
-              margin: "0 -20px", position: "relative", height: "340px", overflow: "hidden",
-              background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
-            }}>
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.8) 100%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(255,140,66,0.15) 0%, rgba(139,92,246,0.1) 50%, rgba(232,99,124,0.15) 100%)", opacity: 0.6 }} />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }} />
-              <div style={{ position: "absolute", bottom: "40px", left: "28px", right: "28px", zIndex: 1 }}>
-                <h1 style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "12px", letterSpacing: "-2px", textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>BLESH</h1>
-                <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.92)", fontWeight: 500, textShadow: "0 2px 8px rgba(0,0,0,0.4)", lineHeight: 1.5, maxWidth: "320px" }}>{t.slogan}</p>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 400, marginTop: "6px" }}>{t.sub}</p>
-              </div>
-            </div>
-
             {showLanding ? (
-              /* ===== LANDING SECTION ===== */
+              /* ===== LANDING PAGE ===== */
               <div style={{ animation: "fadeUp 0.5s ease" }}>
+
+                {/* HERO FULLSCREEN */}
+                <div style={{
+                  margin: "0 -20px", position: "relative", height: "85vh", minHeight: "500px", maxHeight: "700px", overflow: "hidden",
+                  background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
+                }}>
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.75) 100%)" }} />
+                  <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(255,140,66,0.12) 0%, transparent 50%, rgba(232,99,124,0.12) 100%)" }} />
+                  <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 24px", zIndex: 1 }}>
+                    <div style={{ marginBottom: "24px" }}>
+                      <svg width="56" height="56" viewBox="0 0 192 192" style={{ borderRadius: "16px", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+                        <defs><linearGradient id="heroLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#FF8C42"/><stop offset="100%" stopColor="#E8637C"/></linearGradient></defs>
+                        <rect width="192" height="192" rx="44" fill="url(#heroLogoGrad)"/>
+                        <text x="96" y="128" fontFamily="'Quicksand', Arial" fontSize="110" fontWeight="700" fill="white" textAnchor="middle" opacity="0.95">B</text>
+                        <g transform="translate(130, 42) rotate(-25)"><path d="M0 6 L18 0 L16 5 L24 3 L16 7 L18 12 L0 6Z" fill="white" opacity="0.9"/></g>
+                      </svg>
+                    </div>
+                    <h1 style={{ fontSize: "clamp(48px, 14vw, 72px)", fontWeight: 700, color: "#fff", lineHeight: 0.95, marginBottom: "16px", letterSpacing: "-3px", textShadow: "0 4px 24px rgba(0,0,0,0.5)" }}>BLESH</h1>
+                    <p style={{ fontSize: "clamp(16px, 4vw, 20px)", color: "rgba(255,255,255,0.92)", fontWeight: 500, textShadow: "0 2px 12px rgba(0,0,0,0.4)", lineHeight: 1.5, maxWidth: "380px", marginBottom: "8px" }}>{t.slogan}</p>
+                    <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", fontWeight: 400, marginBottom: "36px", maxWidth: "300px" }}>{t.sub}</p>
+                    <button className="cta" onClick={() => { setShowLanding(false); window.scrollTo(0, 0); }} style={{
+                      padding: "16px 48px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
+                      border: "none", borderRadius: "50px", color: "#fff", fontSize: "16px", fontWeight: 700,
+                      letterSpacing: "-0.3px", transition: "all 0.3s ease",
+                      boxShadow: "0 4px 24px rgba(255,140,66,0.45)",
+                    }}>{t.startCta}</button>
+                  </div>
+                  {/* Scroll indicator */}
+                  <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", zIndex: 1, animation: "blobFloat3 3s ease-in-out infinite" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+
+                {/* STATS BAR */}
+                <div style={{
+                  display: "flex", justifyContent: "center", gap: "0", margin: "0 -20px",
+                  background: isDark ? "rgba(255,140,66,0.08)" : "rgba(255,140,66,0.05)",
+                  borderBottom: `1px solid ${isDark ? "rgba(255,140,66,0.12)" : "rgba(255,140,66,0.1)"}`,
+                  padding: "20px 0",
+                }}>
+                  {[
+                    { num: "10K+", label: t.statsTrips },
+                    { num: "150+", label: t.statsCountries },
+                    { num: "4.9/5", label: t.statsRating },
+                  ].map((stat, i) => (
+                    <div key={i} style={{
+                      flex: 1, textAlign: "center",
+                      borderRight: i < 2 ? `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` : "none",
+                      animation: `fadeUp 0.4s ease ${i * 0.1}s both`,
+                    }}>
+                      <div style={{ fontSize: "22px", fontWeight: 700, background: "linear-gradient(135deg, #FF8C42, #E8637C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{stat.num}</div>
+                      <div style={{ fontSize: "11px", color: c.textMuted, fontWeight: 500, marginTop: "2px" }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
 
                 {/* HOW IT WORKS */}
                 <div style={{ padding: "48px 0 40px" }}>
-                  <h2 style={{ fontSize: "22px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "32px", letterSpacing: "-0.5px" }}>{t.howTitle}</h2>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <h2 style={{ fontSize: "22px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "8px", letterSpacing: "-0.5px" }}>{t.howTitle}</h2>
+                  <p style={{ fontSize: "13px", color: c.textMuted, textAlign: "center", marginBottom: "32px" }}>{t.sub}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
                     {t.howSteps.map((step, i) => (
-                      <div key={i} style={{ display: "flex", gap: "16px", alignItems: "flex-start", animation: `fadeUp 0.4s ease ${i * 0.12}s both` }}>
+                      <div key={i} style={{
+                        ...formCard, display: "flex", gap: "16px", alignItems: "center",
+                        animation: `fadeUp 0.4s ease ${i * 0.12}s both`,
+                      }}>
                         <div style={{
-                          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+                          width: 48, height: 48, borderRadius: 14, flexShrink: 0,
                           background: i === 0 ? "linear-gradient(135deg, #FF8C42, #E8637C)" : i === 1 ? "linear-gradient(135deg, #8E2DE2, #4A00E0)" : "linear-gradient(135deg, #11998E, #38EF7D)",
                           display: "flex", alignItems: "center", justifyContent: "center",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          boxShadow: i === 0 ? "0 4px 16px rgba(255,140,66,0.3)" : i === 1 ? "0 4px 16px rgba(142,45,226,0.25)" : "0 4px 16px rgba(17,153,142,0.25)",
+                          fontSize: "20px", fontWeight: 700, color: "#fff",
                         }}>
-                          {i === 0 ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                          ) : i === 1 ? (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                          ) : (
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                          )}
+                          {i + 1}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: "15px", fontWeight: 700, color: c.text, marginBottom: "4px" }}>{step.title}</div>
+                          <div style={{ fontSize: "15px", fontWeight: 700, color: c.text, marginBottom: "3px" }}>{step.title}</div>
                           <div style={{ fontSize: "13px", color: c.textMuted, lineHeight: 1.6 }}>{step.desc}</div>
                         </div>
                       </div>
@@ -1381,39 +1436,92 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* INSPIRATION GALLERY */}
+                {/* DESTINATIONS POPULAIRES - Scroll horizontal */}
                 <div style={{ marginBottom: "40px" }}>
-                  <h2 style={{ fontSize: "18px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "20px", letterSpacing: "-0.3px" }}>{t.inspireTitle}</h2>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+                  <h2 style={{ fontSize: "20px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "20px", letterSpacing: "-0.3px" }}>{t.inspireTitle}</h2>
+                  <div className="pills-scroll" style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "4px 0 16px", margin: "0 -20px", paddingLeft: "20px", paddingRight: "20px", WebkitOverflowScrolling: "touch" }}>
                     {["Santorini", "Kyoto", "Marrakech", "Bali", "Amalfi_Coast", "Machu_Picchu"].map((place, i) => (
                       <div key={place} style={{
-                        position: "relative", borderRadius: "14px", overflow: "hidden",
-                        height: i < 3 ? "130px" : "100px",
+                        position: "relative", borderRadius: "18px", overflow: "hidden", flexShrink: 0,
+                        width: "160px", height: "210px",
                         background: inspireImages[place] ? `url(${inspireImages[place]}) center/cover no-repeat` : DEST_GRADIENTS[i % DEST_GRADIENTS.length],
                         animation: `fadeUp 0.4s ease ${i * 0.08}s both`,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
                       }}>
-                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.05) 60%)" }} />
-                        <span style={{ position: "absolute", bottom: "8px", left: "10px", fontSize: "11px", fontWeight: 700, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
-                          {place.replace(/_/g, ' ')}
-                        </span>
+                        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%)" }} />
+                        <div style={{ position: "absolute", bottom: "14px", left: "14px", right: "14px", zIndex: 1 }}>
+                          <div style={{ fontSize: "14px", fontWeight: 700, color: "#fff", textShadow: "0 2px 6px rgba(0,0,0,0.5)" }}>
+                            {place.replace(/_/g, ' ')}
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* CTA */}
-                <button className="cta" onClick={() => { setShowLanding(false); window.scrollTo(0, 0); }} style={{
-                  width: "100%", padding: "18px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
-                  border: "none", borderRadius: "16px", color: "#fff", fontSize: "17px", fontWeight: 700,
-                  letterSpacing: "-0.3px", transition: "all 0.3s ease",
-                  boxShadow: "0 4px 20px rgba(255,140,66,0.35)", marginBottom: "20px",
-                }}>{t.startCta}</button>
+                {/* TESTIMONIALS */}
+                <div style={{ marginBottom: "40px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {t.testimonials.map((review, i) => (
+                      <div key={i} style={{
+                        ...formCard, padding: "18px 20px",
+                        animation: `fadeUp 0.4s ease ${i * 0.1}s both`,
+                      }}>
+                        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+                          {[1,2,3,4,5].map(s => (
+                            <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="#FFB800" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                          ))}
+                        </div>
+                        <p style={{ fontSize: "14px", color: c.text, lineHeight: 1.6, marginBottom: "10px", fontStyle: "italic" }}>"{review.text}"</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: "50%",
+                            background: i === 0 ? "linear-gradient(135deg, #FF8C42, #E8637C)" : i === 1 ? "linear-gradient(135deg, #8E2DE2, #4A00E0)" : "linear-gradient(135deg, #11998E, #38EF7D)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "12px", fontWeight: 700, color: "#fff",
+                          }}>{review.name[0]}</div>
+                          <div>
+                            <div style={{ fontSize: "12px", fontWeight: 700, color: c.text }}>{review.name}</div>
+                            <div style={{ fontSize: "11px", color: c.textMuted }}>{review.loc}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FINAL CTA */}
+                <div style={{
+                  ...formCard, textAlign: "center", padding: "36px 24px", marginBottom: "20px",
+                  background: isDark ? "linear-gradient(135deg, rgba(255,140,66,0.1), rgba(232,99,124,0.1))" : "linear-gradient(135deg, rgba(255,140,66,0.06), rgba(232,99,124,0.06))",
+                  border: `1px solid ${isDark ? "rgba(255,140,66,0.15)" : "rgba(255,140,66,0.1)"}`,
+                }}>
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: c.text, marginBottom: "8px", letterSpacing: "-0.5px" }}>{t.ctaTitle}</h2>
+                  <p style={{ fontSize: "14px", color: c.textMuted, marginBottom: "24px" }}>{t.ctaSub}</p>
+                  <button className="cta" onClick={() => { setShowLanding(false); window.scrollTo(0, 0); }} style={{
+                    padding: "16px 48px", background: "linear-gradient(135deg, #FF8C42 0%, #E8637C 100%)",
+                    border: "none", borderRadius: "50px", color: "#fff", fontSize: "16px", fontWeight: 700,
+                    letterSpacing: "-0.3px", transition: "all 0.3s ease",
+                    boxShadow: "0 4px 24px rgba(255,140,66,0.4)",
+                  }}>{t.startCta}</button>
+                </div>
               </div>
             ) : (
               /* ===== FORM ===== */
               <div style={{ animation: "fadeUp 0.4s ease" }}>
 
-              <div style={{ height: "28px" }} />
+              {/* Mini hero form */}
+              <div style={{
+                margin: "0 -20px 24px", padding: "32px 28px 28px", position: "relative", overflow: "hidden",
+                background: heroImage ? `url(${heroImage}) center/cover no-repeat` : HERO_GRADIENT,
+                borderRadius: "0 0 24px 24px",
+              }}>
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.7))" }} />
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#fff", letterSpacing: "-1px", marginBottom: "4px" }}>{t.slogan}</h2>
+                  <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)" }}>{t.sub}</p>
+                </div>
+              </div>
 
               {/* FORM */}
               <div ref={formRef} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
