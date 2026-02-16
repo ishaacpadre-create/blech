@@ -56,7 +56,7 @@ const T = {
       { title: "L'IA trouve pour vous", desc: "Notre IA analyse des milliers de destinations et vous propose les 3 meilleures." },
       { title: "Partez l'esprit tranquille", desc: "Itinéraire jour par jour, vrais prix, réservation en un clic." },
     ],
-    inspireTitle: "Ils sont partis avec BLEESH",
+    inspireTitle: "Ils sont partis avec BLESH",
     startCta: "Planifier mon voyage",
   },
   en: {
@@ -111,7 +111,7 @@ const T = {
       { title: "AI finds for you", desc: "Our AI analyzes thousands of destinations and suggests the 3 best matches." },
       { title: "Travel with confidence", desc: "Day-by-day itinerary, real prices, one-click booking." },
     ],
-    inspireTitle: "They traveled with BLEESH",
+    inspireTitle: "They traveled with BLESH",
     startCta: "Plan my trip",
   }
 };
@@ -363,14 +363,14 @@ export default function App() {
 
   // Charger les voyages sauvegardés
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('bleesh_trips') || '[]');
+    const saved = JSON.parse(localStorage.getItem('blesh_trips') || '[]');
     setSavedTrips(saved);
   }, []);
 
   const saveTrip = () => {
     const trip = { id: Date.now(), city: result.destination.city, country: result.destination.country, data: result, image: destImage };
     const updated = [...savedTrips, trip];
-    localStorage.setItem('bleesh_trips', JSON.stringify(updated));
+    localStorage.setItem('blesh_trips', JSON.stringify(updated));
     setSavedTrips(updated);
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 2000);
@@ -378,7 +378,7 @@ export default function App() {
 
   const deleteSavedTrip = (id) => {
     const updated = savedTrips.filter(t => t.id !== id);
-    localStorage.setItem('bleesh_trips', JSON.stringify(updated));
+    localStorage.setItem('blesh_trips', JSON.stringify(updated));
     setSavedTrips(updated);
   };
 
@@ -585,7 +585,7 @@ export default function App() {
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(28);
       pdf.setFont("helvetica", "bold");
-      pdf.text("BLEESH", margin, 25);
+      pdf.text("BLESH", margin, 25);
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
       pdf.text(t.slogan, margin, 34);
@@ -717,9 +717,9 @@ export default function App() {
       y += 6;
       pdf.setFontSize(8);
       pdf.setTextColor(180, 180, 180);
-      pdf.text(`BLEESH — ${lang === 'fr' ? 'Généré le' : 'Generated on'} ${new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}`, margin, y);
+      pdf.text(`BLESH — ${lang === 'fr' ? 'Généré le' : 'Generated on'} ${new Date().toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US')}`, margin, y);
 
-      pdf.save(`BLEESH-${result.destination?.city || 'voyage'}.pdf`);
+      pdf.save(`BLESH-${result.destination?.city || 'voyage'}.pdf`);
     } catch (err) { console.error("PDF export error:", err); }
   };
 
@@ -737,13 +737,13 @@ export default function App() {
       desc,
       dates ? `📅 ${dates}` : '',
       '',
-      `${lang === 'fr' ? 'Planifié avec' : 'Planned with'} BLEESH`,
+      `${lang === 'fr' ? 'Planifié avec' : 'Planned with'} BLESH`,
       window.location.origin,
     ].filter(Boolean).join('\n');
 
     try {
       if (navigator.share) {
-        await navigator.share({ title: `BLEESH — ${city}`, text: shareText });
+        await navigator.share({ title: `BLESH — ${city}`, text: shareText });
       } else {
         await navigator.clipboard.writeText(shareText);
         setCopiedLink(true);
@@ -876,7 +876,15 @@ export default function App() {
 
       {/* HEADER */}
       <header style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: c.header, borderBottom: `1px solid ${c.headerBorder}`, transition: "background 0.3s" }}>
-        <span style={{ fontSize: "22px", fontWeight: 700, color: "#FF8C42", letterSpacing: "-0.5px" }}>BLEESH</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setPage("form"); setShowLanding(true); }}>
+          <svg width="30" height="30" viewBox="0 0 192 192" style={{ borderRadius: "8px" }}>
+            <defs><linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#FF8C42"/><stop offset="100%" stopColor="#E8637C"/></linearGradient></defs>
+            <rect width="192" height="192" rx="44" fill="url(#logoGrad)"/>
+            <text x="96" y="128" fontFamily="'Quicksand', Arial, sans-serif" fontSize="110" fontWeight="700" fill="white" textAnchor="middle" opacity="0.95">B</text>
+            <g transform="translate(130, 42) rotate(-25)"><path d="M0 6 L18 0 L16 5 L24 3 L16 7 L18 12 L0 6Z" fill="white" opacity="0.9"/></g>
+          </svg>
+          <span style={{ fontSize: "22px", fontWeight: 700, background: "linear-gradient(135deg, #FF8C42, #E8637C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.5px" }}>BLESH</span>
+        </div>
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
           {savedTrips.length > 0 && (
             <button onClick={() => setShowSaved(!showSaved)} style={{ background: isDark ? "#333" : "#F5F5F5", border: "none", borderRadius: "20px", padding: "6px 12px", color: "#FF8C42", fontSize: "12px", fontWeight: 700, position: "relative" }}>
@@ -1324,7 +1332,7 @@ export default function App() {
               <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(255,140,66,0.15) 0%, rgba(139,92,246,0.1) 50%, rgba(232,99,124,0.15) 100%)", opacity: 0.6 }} />
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "60%", background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)" }} />
               <div style={{ position: "absolute", bottom: "40px", left: "28px", right: "28px", zIndex: 1 }}>
-                <h1 style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "12px", letterSpacing: "-2px", textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>BLEESH</h1>
+                <h1 style={{ fontSize: "clamp(44px, 12vw, 64px)", fontWeight: 700, color: "#fff", lineHeight: 1, marginBottom: "12px", letterSpacing: "-2px", textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>BLESH</h1>
                 <p style={{ fontSize: "17px", color: "rgba(255,255,255,0.92)", fontWeight: 500, textShadow: "0 2px 8px rgba(0,0,0,0.4)", lineHeight: 1.5, maxWidth: "320px" }}>{t.slogan}</p>
                 <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.6)", fontWeight: 400, marginTop: "6px" }}>{t.sub}</p>
               </div>

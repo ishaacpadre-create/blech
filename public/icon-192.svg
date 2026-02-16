@@ -1,4 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#FF8C42"/>
-  <text x="96" y="120" font-family="Arial, sans-serif" font-size="96" font-weight="bold" fill="white" text-anchor="middle">B</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="100%" stop-color="#E8637C"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="44" fill="url(#bg)"/>
+  <rect width="192" height="192" rx="44" fill="url(#shine)"/>
+  <!-- B letter -->
+  <text x="96" y="128" font-family="'Quicksand', Arial, sans-serif" font-size="110" font-weight="700" fill="white" text-anchor="middle" opacity="0.95">B</text>
+  <!-- Small airplane -->
+  <g transform="translate(130, 42) rotate(-25)">
+    <path d="M0 6 L18 0 L16 5 L24 3 L16 7 L18 12 L0 6Z" fill="white" opacity="0.9"/>
+    <line x1="6" y1="6" x2="2" y2="12" stroke="white" stroke-width="1.5" opacity="0.7"/>
+    <line x1="10" y1="6" x2="8" y2="10" stroke="white" stroke-width="1.5" opacity="0.7"/>
+  </g>
+  <!-- Subtle trail dots -->
+  <circle cx="148" cy="55" r="1.5" fill="white" opacity="0.4"/>
+  <circle cx="155" cy="58" r="1" fill="white" opacity="0.3"/>
+  <circle cx="161" cy="62" r="0.7" fill="white" opacity="0.2"/>
 </svg>

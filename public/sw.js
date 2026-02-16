@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bleesh-v1';
+const CACHE_NAME = 'blesh-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

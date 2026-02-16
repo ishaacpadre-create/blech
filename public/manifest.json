@@ -1,6 +1,6 @@
 {
-  "name": "BLEESH - Organisateur de vacances",
-  "short_name": "BLEESH",
+  "name": "BLESH - Organisateur de vacances",
+  "short_name": "BLESH",
   "description": "Planificateur de voyage intelligent propulsé par l'IA",
   "start_url": "/",
   "display": "standalone",
