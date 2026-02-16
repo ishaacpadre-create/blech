@@ -842,12 +842,22 @@ export default function App() {
   const secTitle = { fontSize: "15px", fontWeight: 700, color: c.text, letterSpacing: "-0.3px" };
 
   return (
-    <div style={{ minHeight: "100vh", background: c.bg, fontFamily: "'Quicksand', system-ui, sans-serif", color: c.text, transition: "background 0.3s, color 0.3s" }}>
+    <div style={{ minHeight: "100vh", background: c.bg, fontFamily: "'Quicksand', system-ui, sans-serif", color: c.text, transition: "background 0.3s, color 0.3s", position: "relative", overflow: "hidden" }}>
+      {/* BACKGROUND DECORATIONS */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: "-10%", right: "-15%", width: "500px", height: "500px", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(255,140,66,0.06) 0%, transparent 70%)" : "radial-gradient(circle, rgba(255,140,66,0.08) 0%, transparent 70%)", animation: "blobFloat1 20s ease-in-out infinite", filter: "blur(40px)" }} />
+        <div style={{ position: "absolute", bottom: "-5%", left: "-10%", width: "450px", height: "450px", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(142,45,226,0.05) 0%, transparent 70%)" : "radial-gradient(circle, rgba(142,45,226,0.06) 0%, transparent 70%)", animation: "blobFloat2 25s ease-in-out infinite", filter: "blur(40px)" }} />
+        <div style={{ position: "absolute", top: "40%", left: "50%", width: "400px", height: "400px", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(232,99,124,0.04) 0%, transparent 70%)" : "radial-gradient(circle, rgba(62,193,211,0.06) 0%, transparent 70%)", animation: "blobFloat3 18s ease-in-out infinite", filter: "blur(40px)" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: isDark ? "radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px)" : "radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+      </div>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blobFloat1 { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -50px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.95); } }
+        @keyframes blobFloat2 { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(-40px, 30px) scale(1.05); } 66% { transform: translate(25px, -35px) scale(0.9); } }
+        @keyframes blobFloat3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, 40px) scale(1.08); } }
         button { cursor: pointer; font-family: 'Quicksand', sans-serif; }
         input, select, textarea { font-family: 'Quicksand', sans-serif; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: #FF8C42 !important; box-shadow: 0 0 0 3px rgba(255,140,66,0.12); }
@@ -875,7 +885,7 @@ export default function App() {
       )}
 
       {/* HEADER */}
-      <header style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: c.header, borderBottom: `1px solid ${c.headerBorder}`, transition: "background 0.3s" }}>
+      <header style={{ padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", background: c.header, borderBottom: `1px solid ${c.headerBorder}`, transition: "background 0.3s", position: "relative", zIndex: 2 }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setPage("form"); setShowLanding(true); }}>
           <svg width="30" height="30" viewBox="0 0 192 192" style={{ borderRadius: "8px" }}>
             <defs><linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#FF8C42"/><stop offset="100%" stopColor="#E8637C"/></linearGradient></defs>
@@ -905,7 +915,7 @@ export default function App() {
 
       {/* STEPPER */}
       {(suggestions || result) && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", padding: "16px 24px 0", maxWidth: "400px", margin: "0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0", padding: "16px 24px 0", maxWidth: "400px", margin: "0 auto", position: "relative", zIndex: 1 }}>
           {t.steps.map((label, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", flex: i < 2 ? 1 : "none" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
@@ -927,7 +937,7 @@ export default function App() {
         </div>
       )}
 
-      <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px" }}>
+      <main style={{ maxWidth: "580px", margin: "0 auto", padding: "0 20px 60px", position: "relative", zIndex: 1 }}>
 
         {result ? (
           /* ===== RESULTS ===== */
@@ -1699,6 +1709,27 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* FOOTER */}
+      <footer style={{
+        position: "relative", zIndex: 1, textAlign: "center", padding: "32px 20px 24px",
+        borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "8px" }}>
+          <svg width="20" height="20" viewBox="0 0 192 192" style={{ borderRadius: "5px" }}>
+            <defs><linearGradient id="fLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#FF8C42"/><stop offset="100%" stopColor="#E8637C"/></linearGradient></defs>
+            <rect width="192" height="192" rx="44" fill="url(#fLogoGrad)"/>
+            <text x="96" y="128" fontFamily="'Quicksand', Arial" fontSize="110" fontWeight="700" fill="white" textAnchor="middle" opacity="0.95">B</text>
+          </svg>
+          <span style={{ fontSize: "15px", fontWeight: 700, background: "linear-gradient(135deg, #FF8C42, #E8637C)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>BLESH</span>
+        </div>
+        <p style={{ fontSize: "12px", color: c.textMuted, lineHeight: 1.6 }}>
+          {lang === 'fr' ? "Ton voyage parfait, propulsé par l'IA" : "Your perfect trip, powered by AI"}
+        </p>
+        <p style={{ fontSize: "11px", color: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)", marginTop: "12px" }}>
+          © 2025 BLESH
+        </p>
+      </footer>
     </div>
   );
 }
