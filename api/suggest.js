@@ -27,8 +27,10 @@ export default async function handler(req, res) {
       : { romantic: "romantic (couple)", friends: "with friends", solo: "solo", familyTrip: "family", roadtrip: "road trip" };
     const tripTypeName = tripTypes[tripType] || (isFr ? "entre amis" : "with friends");
 
+    const isRoadtrip = tripType === 'roadtrip';
+
     const prompt = isFr
-      ? `Tu es un expert en voyages. Propose exactement 3 destinations DIFFÉRENTES (dans des pays différents) pour un voyage avec ces critères :
+      ? `Tu es un expert en voyages. Propose exactement 3 ${isRoadtrip ? 'itinéraires road trip DIFFÉRENTS' : 'destinations DIFFÉRENTES (dans des pays différents)'} pour un voyage avec ces critères :
 - Budget total : ${budget}€
 - Nombre de voyageurs : ${travelers}
 - Mois de départ : ${monthName}
@@ -47,28 +49,34 @@ IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans
 {
   "suggestions": [
     {
-      "city": "Ville",
-      "country": "Pays",
-      "description": "Description attractive de 2 phrases",
+      "city": "${isRoadtrip ? 'Ville principale ou point fort du parcours (1 seule ville pour la photo)' : 'Ville'}",
+      "country": "${isRoadtrip ? 'Tous les pays traversés séparés par des virgules (ex: France, Espagne, Portugal)' : 'Pays'}",
+      "description": "${isRoadtrip ? 'Description du parcours complet avec les étapes principales (ex: Départ de Lyon → Côte d\'Azur → Gênes → Cinque Terre → Florence). 2-3 phrases.' : 'Description attractive de 2 phrases'}",
       "estimatedBudget": nombre,
-      "matchReason": "1 phrase expliquant pourquoi cette destination correspond aux préférences",
+      "matchReason": "1 phrase expliquant pourquoi ${isRoadtrip ? 'cet itinéraire' : 'cette destination'} correspond aux préférences",
       "suggestedDates": "dates idéales suggérées (ex: du 15 au 22 mars)"
     }
   ]
 }
 
 Règles :
-- Propose exactement 3 destinations dans 3 pays DIFFÉRENTS
+${isRoadtrip
+  ? `- Propose exactement 3 itinéraires road trip DIFFÉRENTS traversant chacun AU MOINS 2 pays
+- Chaque itinéraire doit être un vrai parcours avec 4 à 8 étapes/villes à travers plusieurs pays
+- Le champ "city" doit contenir UNE seule ville (la plus emblématique du parcours) pour l'image
+- Le champ "country" doit lister TOUS les pays traversés séparés par des virgules
+- La description doit détailler le parcours complet avec les étapes (ville → ville → ville)
+- Les 3 itinéraires doivent être variés : directions et pays différents`
+  : `- Propose exactement 3 destinations dans 3 pays DIFFÉRENTS
+- Varie les styles : une destination classique, une originale, une surprenante`}
 - Chaque estimatedBudget doit être réaliste et proche de ${budget}€
 - Les destinations doivent être réalistes et accessibles depuis ${city || 'Paris'}
-- Varie les styles : une destination classique, une originale, une surprenante
-${tripType === 'roadtrip' ? '- Type road trip : propose des parcours avec plusieurs étapes/villes' : ''}
 ${noFlight ? '- Sans vol : propose des destinations accessibles en voiture/train depuis ' + (city || 'Paris') + ', estimatedBudget sans frais de vol' : ''}
 ${noHotel ? "- Sans hôtel : le budget ne doit pas inclure d'hébergement" : ''}
 ${continent ? '- Toutes les destinations doivent être en ' + continent : ''}
 ${multiDest ? '- Intègre ces villes/étapes dans les propositions : ' + multiDest : ''}
 - Pour suggestedDates : ${exactDate ? 'utilise la date exacte fournie' : 'propose les meilleures dates dans le mois indiqué'}`
-      : `You are a travel expert. Propose exactly 3 DIFFERENT destinations (in different countries) for a trip with these criteria:
+      : `You are a travel expert. Propose exactly 3 ${isRoadtrip ? 'DIFFERENT road trip itineraries' : 'DIFFERENT destinations (in different countries)'} for a trip with these criteria:
 - Total budget: ${budget}€
 - Number of travelers: ${travelers}
 - Departure month: ${monthName}
@@ -87,22 +95,28 @@ IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. 
 {
   "suggestions": [
     {
-      "city": "City",
-      "country": "Country",
-      "description": "Attractive 2-sentence description",
+      "city": "${isRoadtrip ? 'Main city or highlight of the route (1 single city for the photo)' : 'City'}",
+      "country": "${isRoadtrip ? 'All countries crossed separated by commas (e.g. France, Spain, Portugal)' : 'Country'}",
+      "description": "${isRoadtrip ? 'Full route description with main stops (e.g. Departure from Lyon → French Riviera → Genoa → Cinque Terre → Florence). 2-3 sentences.' : 'Attractive 2-sentence description'}",
       "estimatedBudget": number,
-      "matchReason": "1 sentence explaining why this destination matches the preferences",
+      "matchReason": "1 sentence explaining why this ${isRoadtrip ? 'itinerary' : 'destination'} matches the preferences",
       "suggestedDates": "suggested ideal dates (e.g. March 15-22)"
     }
   ]
 }
 
 Rules:
-- Propose exactly 3 destinations in 3 DIFFERENT countries
+${isRoadtrip
+  ? `- Propose exactly 3 DIFFERENT road trip itineraries each crossing AT LEAST 2 countries
+- Each itinerary must be a real route with 4 to 8 stops/cities across multiple countries
+- The "city" field must contain ONE single city (the most iconic of the route) for the image
+- The "country" field must list ALL countries crossed separated by commas
+- The description must detail the full route with stops (city → city → city)
+- The 3 itineraries must be varied: different directions and countries`
+  : `- Propose exactly 3 destinations in 3 DIFFERENT countries
+- Vary the styles: one classic, one original, one surprising`}
 - Each estimatedBudget must be realistic and close to ${budget}€
 - Destinations must be realistic and accessible from ${city || 'Paris'}
-- Vary the styles: one classic, one original, one surprising
-${tripType === 'roadtrip' ? '- Road trip type: suggest routes with multiple stops/cities' : ''}
 ${noFlight ? '- No flights: suggest destinations reachable by car/train from ' + (city || 'Paris') + ', estimatedBudget without flight costs' : ''}
 ${noHotel ? '- No hotel: budget should not include accommodation costs' : ''}
 ${continent ? '- All destinations must be in ' + continent : ''}
