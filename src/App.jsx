@@ -853,6 +853,7 @@ export default function App() {
     border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`,
     boxShadow: isDark ? "0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03)",
     transition: "background 0.3s, box-shadow 0.3s",
+    minWidth: 0, overflow: "hidden",
   };
   const secHead = { display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" };
   const secTitle = { fontSize: "15px", fontWeight: 700, color: c.text, letterSpacing: "-0.3px" };
@@ -882,8 +883,10 @@ export default function App() {
         .pick-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
         .pills-scroll::-webkit-scrollbar { display: none; }
         .pills-scroll { scrollbar-width: none; }
-        @media(max-width:600px) { .g2 { grid-template-columns: 1fr !important; } .form-grid { grid-template-columns: 1fr !important; } .suggestions-grid { grid-template-columns: 1fr !important; } }
-        @media(min-width:601px) { .pref-grid { grid-template-columns: repeat(5, 1fr) !important; } }
+        @media(max-width:700px) { .g2 { grid-template-columns: 1fr !important; } .form-grid { grid-template-columns: 1fr !important; } .suggestions-grid { grid-template-columns: 1fr !important; } }
+        @media(min-width:701px) { .pref-grid { grid-template-columns: repeat(5, 1fr) !important; } }
+        main, main * { max-width: 100%; }
+        .form-card-wrap { min-width: 0; overflow: hidden; }
       `}</style>
 
       {/* LOADING */}
@@ -1526,10 +1529,10 @@ export default function App() {
               </div>
 
               {/* FORM */}
-              <div ref={formRef} className="form-grid" style={{ display: "grid", gridTemplateColumns: "5fr 3fr", gap: "20px" }}>
+              <div ref={formRef} className="form-grid" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: "20px" }}>
 
               {/* CARD 1: L'essentiel */}
-              <div style={formCard}>
+              <div className="form-card-wrap" style={formCard}>
                 <div style={secHead}>
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #FF8C42, #E8637C)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
@@ -1570,7 +1573,7 @@ export default function App() {
               </div>
 
               {/* CARD 2: Quand partir */}
-              <div style={formCard}>
+              <div className="form-card-wrap" style={formCard}>
                 <div style={secHead}>
                   <div style={{ width: 32, height: 32, borderRadius: 10, background: "linear-gradient(135deg, #3EC1D3, #185A9D)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -1595,11 +1598,10 @@ export default function App() {
                 </div>
                 <div style={{ marginTop: "14px" }}>
                   <label style={lbl}>{t.continent}</label>
-                  <div className="pills-scroll" style={{ display: "flex", gap: "6px", overflowX: "auto", paddingBottom: "4px", WebkitOverflowScrolling: "touch" }}>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                     {Object.entries(t.continents).map(([k, label]) => (
                       <button key={k} onClick={() => setContinent(k)} style={{
-                        padding: "8px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
-                        whiteSpace: "nowrap", flexShrink: 0,
+                        padding: "7px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 600,
                         border: continent === k ? "2px solid #3EC1D3" : `2px solid ${c.inputBorder}`,
                         background: continent === k ? (isDark ? "#1A2A2E" : "#E8F8FA") : c.input,
                         color: continent === k ? "#3EC1D3" : c.textMuted, transition: "all 0.2s",
