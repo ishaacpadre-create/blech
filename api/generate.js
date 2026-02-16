@@ -82,9 +82,13 @@ IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans
 
 Règles :
 - Propose 3 à 6 étapes (villes différentes) formant un circuit logique et géographiquement cohérent
-- Le budget total doit être proche de ${budget}€
+- Le budget total doit être proche de ${budget}€ pour ${travelers} voyageur(s) avec des prix RÉALISTES
+- flights = vols aller-retour pour tous les voyageurs (0 si road trip sans vol)
+- hotel = hébergement total pour toute la durée
+- food = budget repas réaliste pour toute la durée
+- transport = carburant, péages, location voiture si besoin
 - Chaque étape a ses propres jours détaillés
-- Inclus les trajets entre étapes dans les descriptions
+- Inclus les trajets entre étapes dans les descriptions (distance, durée)
 - Donne des noms de lieux, restaurants et activités RÉELS
 - Le total des jours doit correspondre à la durée "${durName}"
 ${exactDate ? '' : '- Propose des dates idéales de voyage dans le champ "suggestedDates"'}`
@@ -129,7 +133,13 @@ IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans
 }
 
 Règles :
-- Le budget total (flights+hotel+activities+food+transport) doit être proche de ${budget}€
+- Le budget total (flights+hotel+activities+food+transport) doit être proche de ${budget}€ pour ${travelers} voyageur(s)
+- Les prix doivent être RÉALISTES pour ${monthName} : utilise les vrais prix moyens des vols, hôtels, restaurants de la destination
+- flights = prix total des vols aller-retour pour TOUS les voyageurs
+- hotel = prix total de l'hébergement pour TOUTE la durée du séjour
+- food = budget repas réaliste (petit-déj + déjeuner + dîner × nombre de jours × voyageurs)
+- activities = coût réel des activités/visites mentionnées dans le programme
+- transport = transports locaux (taxi, métro, bus, location voiture si besoin)
 - Propose exactement le bon nombre de jours selon la durée "${durName}"
 - Donne des noms de lieux, restaurants et activités RÉELS et précis
 - Les tips doivent être des conseils pratiques et utiles
@@ -187,9 +197,13 @@ IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. 
 
 Rules:
 - Propose 3 to 6 stages (different cities) forming a logical and geographically coherent circuit
-- Total budget must be close to ${budget}€
+- Total budget must be close to ${budget}€ for ${travelers} traveler(s) with REALISTIC prices
+- flights = round-trip flights for all travelers (0 if road trip without flights)
+- hotel = total accommodation for entire duration
+- food = realistic meal budget for entire duration
+- transport = fuel, tolls, car rental if needed
 - Each stage has its own detailed days
-- Include travel between stages in descriptions
+- Include travel between stages in descriptions (distance, duration)
 - Give REAL and specific place names, restaurants and activities
 - Total days must match the duration "${durName}"
 ${exactDate ? '' : '- Suggest ideal travel dates in a "suggestedDates" field'}`
@@ -234,7 +248,13 @@ IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. 
 }
 
 Rules:
-- Total budget (flights+hotel+activities+food+transport) must be close to ${budget}€
+- Total budget (flights+hotel+activities+food+transport) must be close to ${budget}€ for ${travelers} traveler(s)
+- Prices must be REALISTIC for ${monthName}: use actual average prices for flights, hotels, restaurants at the destination
+- flights = total round-trip flight price for ALL travelers
+- hotel = total accommodation price for the ENTIRE stay
+- food = realistic meal budget (breakfast + lunch + dinner × number of days × travelers)
+- activities = real cost of activities/visits mentioned in the program
+- transport = local transport (taxi, metro, bus, car rental if needed)
 - Propose exactly the right number of days for duration "${durName}"
 - Give REAL and specific place names, restaurants and activities
 - Tips should be practical and useful

@@ -66,6 +66,10 @@ const T = {
     ],
     ctaTitle: "Prêt à partir ?",
     ctaSub: "Créez votre voyage sur mesure en moins de 2 minutes.",
+    refresh: "Proposer 3 autres",
+    resumeSearch: "Reprendre ma dernière recherche",
+    shareWa: "WhatsApp", shareEmail: "Email",
+    ratingLabel: "Note",
   },
   en: {
     slogan: "Your next trip starts here",
@@ -129,6 +133,10 @@ const T = {
     ],
     ctaTitle: "Ready to go?",
     ctaSub: "Create your custom trip in less than 2 minutes.",
+    refresh: "Show 3 more",
+    resumeSearch: "Resume my last search",
+    shareWa: "WhatsApp", shareEmail: "Email",
+    ratingLabel: "Rating",
   }
 };
 
@@ -379,10 +387,18 @@ export default function App() {
     setSuggestionImages(images);
   };
 
-  // Charger les voyages sauvegardés
+  // Charger les voyages sauvegardés + dernière recherche
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('blesh_trips') || '[]');
     setSavedTrips(saved);
+    const last = JSON.parse(localStorage.getItem('blesh_last_search') || 'null');
+    if (last) {
+      setBudget(last.budget || ""); setTrav(last.trav || 2); setMonth(last.month ?? "");
+      setDur(last.dur ?? ""); setCity(last.city || ""); setPrefs(last.prefs || []);
+      setTripType(last.tripType || "friends"); setOtherPrefText(last.otherPrefText || "");
+      setNoFlight(!!last.noFlight); setNoHotel(!!last.noHotel);
+      setContinent(last.continent || "any"); setMultiDest(last.multiDest || "");
+    }
   }, []);
 
   const saveTrip = () => {
@@ -446,6 +462,10 @@ export default function App() {
       setSuggestions(data.suggestions);
       fetchSuggestionImages(data.suggestions);
       window.scrollTo(0, 0);
+      // Sauvegarder la recherche
+      localStorage.setItem('blesh_last_search', JSON.stringify({
+        budget, trav, month, dur, city, prefs, tripType, otherPrefText, noFlight, noHotel, continent, multiDest,
+      }));
     } catch (err) {
       console.error(err);
       setError(t.errSuggest);
@@ -873,7 +893,13 @@ export default function App() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fly { 0% { transform: translateX(-60px) translateY(10px) rotate(-5deg); } 50% { transform: translateX(60px) translateY(-10px) rotate(5deg); } 100% { transform: translateX(-60px) translateY(10px) rotate(-5deg); } }
+        @keyframes trail { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.2); opacity: 1; } }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes blobFloat1 { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(30px, -50px) scale(1.1); } 66% { transform: translate(-20px, 20px) scale(0.95); } }
         @keyframes blobFloat2 { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(-40px, 30px) scale(1.05); } 66% { transform: translate(25px, -35px) scale(0.9); } }
         @keyframes blobFloat3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, 40px) scale(1.08); } }
@@ -882,7 +908,9 @@ export default function App() {
         input:focus, select:focus, textarea:focus { outline: none; border-color: #FF8C42 !important; box-shadow: 0 0 0 3px rgba(255,140,66,0.12); }
         .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(255,140,66,0.4) !important; }
         .cta:active { transform: translateY(0); }
-        .pick-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .pick-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 16px 40px rgba(0,0,0,0.15); }
+        .pick-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .cta { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .pills-scroll::-webkit-scrollbar { display: none; }
         .pills-scroll { scrollbar-width: none; }
         @media(max-width:700px) { .g2 { grid-template-columns: 1fr !important; } .form-grid { grid-template-columns: 1fr !important; } .suggestions-grid { grid-template-columns: 1fr !important; } }
@@ -891,11 +919,37 @@ export default function App() {
         .form-card-wrap { min-width: 0; overflow: hidden; }
       `}</style>
 
-      {/* LOADING */}
+      {/* LOADING - Avion animé */}
       {(loadingSuggestions || loadingItinerary) && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: c.loadingBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
-          <div style={{ width: 40, height: 40, border: "3px solid #EDEDED", borderTop: "3px solid #FF8C42", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-          <div style={{ fontSize: "15px", color: "#FF8C42", fontWeight: 600, transition: "all 0.3s" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 999, background: c.loadingBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "24px" }}>
+          <div style={{ position: "relative", width: "180px", height: "80px" }}>
+            {/* Trail dots */}
+            {[0,1,2,3,4].map(i => (
+              <div key={i} style={{
+                position: "absolute", left: `${20 + i * 30}px`, top: "50%",
+                width: `${4 + i}px`, height: `${4 + i}px`, borderRadius: "50%",
+                background: "#FF8C42", opacity: 0.15 + i * 0.12,
+                animation: `trail 2s ease-in-out ${i * 0.15}s infinite`,
+              }} />
+            ))}
+            {/* Avion */}
+            <div style={{ position: "absolute", left: "50%", top: "50%", marginLeft: "-20px", marginTop: "-20px", animation: "fly 3s ease-in-out infinite" }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FF8C42" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" fill="rgba(255,140,66,0.15)" stroke="#FF8C42"/>
+              </svg>
+            </div>
+          </div>
+          {/* Progress dots */}
+          <div style={{ display: "flex", gap: "6px" }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: i === ldIdx % 3 ? "#FF8C42" : (isDark ? "#444" : "#DDD"),
+                transition: "background 0.3s", animation: i === ldIdx % 3 ? "pulse 1s ease-in-out infinite" : "none",
+              }} />
+            ))}
+          </div>
+          <div style={{ fontSize: "15px", color: "#FF8C42", fontWeight: 600, transition: "all 0.3s", textAlign: "center", maxWidth: "280px" }}>
             {loadingSuggestions ? t.ldSuggest[ldIdx % t.ldSuggest.length] : t.ldItinerary[ldIdx % t.ldItinerary.length]}
           </div>
           {loadingItinerary && selectedSuggestion && (
@@ -963,7 +1017,7 @@ export default function App() {
 
         {result ? (
           /* ===== RESULTS ===== */
-          <div ref={resultRef} style={{ animation: "fadeUp 0.5s ease" }}>
+          <div ref={resultRef} style={{ animation: "scaleIn 0.5s ease" }}>
 
             {/* DESTINATION HERO */}
             <div style={{
@@ -1145,24 +1199,42 @@ export default function App() {
             </button>
 
             {/* EXPORT / SHARE */}
-            <div style={{ display: "flex", gap: "10px", marginBottom: "32px" }}>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "32px", flexWrap: "wrap" }}>
               <button onClick={exportPDF} style={{
-                flex: 1, padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
+                flex: 1, minWidth: "80px", padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
                 background: "transparent", color: c.textMuted, fontSize: "13px", fontWeight: 700,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
-                {t.exportPdf}
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg>
+                PDF
               </button>
               <button onClick={shareTrip} style={{
-                flex: 1, padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
+                flex: 1, minWidth: "80px", padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`,
                 background: copiedLink ? c.tipsBg : "transparent", color: copiedLink ? c.tipsText : c.textMuted,
-                fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
                 transition: "all 0.3s",
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 {copiedLink ? t.copied : t.share}
               </button>
+              <a href={`https://wa.me/?text=${encodeURIComponent(`${result.destination.city}, ${result.destination.country} — ${['flights','hotel','activities','food','transport'].reduce((s,k)=>s+(result.budget?.[k]||0),0)}€\n${result.destination.description}\n\nPlanifié avec BLESH\n${window.location.origin}`)}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1, minWidth: "80px" }}>
+                <div style={{
+                  padding: "12px", borderRadius: "12px", border: "2px solid #25D366", background: "transparent",
+                  color: "#25D366", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  {t.shareWa}
+                </div>
+              </a>
+              <a href={`mailto:?subject=${encodeURIComponent(`BLESH — ${result.destination.city}, ${result.destination.country}`)}&body=${encodeURIComponent(`${result.destination.city}, ${result.destination.country}\n${result.destination.description}\n\nBudget: ${['flights','hotel','activities','food','transport'].reduce((s,k)=>s+(result.budget?.[k]||0),0)}€\n${result.suggestedDates || ''}\n\nPlanifié avec BLESH\n${window.location.origin}`)}`} style={{ textDecoration: "none", flex: 1, minWidth: "80px" }}>
+                <div style={{
+                  padding: "12px", borderRadius: "12px", border: `2px solid ${c.inputBorder}`, background: "transparent",
+                  color: c.textMuted, fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  {t.shareEmail}
+                </div>
+              </a>
             </div>
 
             {/* PROGRAMME — Road trip multi-étapes ou voyage classique */}
@@ -1266,7 +1338,7 @@ export default function App() {
 
         ) : suggestions ? (
           /* ===== DESTINATION PICKER ===== */
-          <div style={{ animation: "fadeUp 0.4s ease", paddingTop: "24px" }}>
+          <div style={{ animation: "slideInRight 0.4s ease", paddingTop: "24px" }}>
 
             {/* Bouton retour */}
             <button onClick={backToForm} style={{
@@ -1277,9 +1349,19 @@ export default function App() {
               {t.pickBack}
             </button>
 
-            {/* Titre */}
+            {/* Titre + Refresh */}
             <h2 style={{ fontSize: "24px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "8px" }}>{t.pickTitle}</h2>
-            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", marginBottom: "28px", fontWeight: 500 }}>{t.pickSub}</p>
+            <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", marginBottom: "16px", fontWeight: 500 }}>{t.pickSub}</p>
+            <div style={{ textAlign: "center", marginBottom: "24px" }}>
+              <button onClick={findSuggestions} style={{
+                background: "transparent", border: `2px solid #FF8C42`, borderRadius: "50px", padding: "10px 24px",
+                color: "#FF8C42", fontSize: "14px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "8px",
+                transition: "all 0.3s",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                {t.refresh}
+              </button>
+            </div>
 
             {error && <div style={{ background: c.errorBg, borderRadius: "10px", padding: "10px 16px", color: "#E55", fontSize: "13px", textAlign: "center", fontWeight: 600, marginBottom: "20px" }}>{error}</div>}
 
@@ -1303,6 +1385,17 @@ export default function App() {
                         {s.city}, {s.country}
                       </div>
                     </div>
+                    {/* Badge rating */}
+                    {s.rating && (
+                      <div style={{
+                        position: "absolute", top: "12px", left: "12px", zIndex: 1,
+                        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", borderRadius: "20px", padding: "4px 10px",
+                        display: "flex", alignItems: "center", gap: "4px",
+                      }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFB800" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#fff" }}>{s.rating}</span>
+                      </div>
+                    )}
                     {/* Badge budget */}
                     <div style={{
                       position: "absolute", bottom: "16px", right: "16px", zIndex: 1,

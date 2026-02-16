@@ -53,6 +53,7 @@ IMPORTANT : Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans
       "country": "${isRoadtrip ? 'Tous les pays traversés séparés par des virgules (ex: France, Espagne, Portugal)' : 'Pays'}",
       "description": "${isRoadtrip ? 'Description du parcours complet avec les étapes principales (ex: Départ de Lyon → Côte d\'Azur → Gênes → Cinque Terre → Florence). 2-3 phrases.' : 'Description attractive de 2 phrases'}",
       "estimatedBudget": nombre,
+      "rating": "note de 1 à 5 (avec 1 décimale, ex: 4.2) basée sur la qualité/popularité de la destination",
       "matchReason": "1 phrase expliquant pourquoi ${isRoadtrip ? 'cet itinéraire' : 'cette destination'} correspond aux préférences",
       "suggestedDates": "dates idéales suggérées (ex: du 15 au 22 mars)"
     }
@@ -99,6 +100,7 @@ IMPORTANT: Respond ONLY with valid JSON, no text before or after, no backticks. 
       "country": "${isRoadtrip ? 'All countries crossed separated by commas (e.g. France, Spain, Portugal)' : 'Country'}",
       "description": "${isRoadtrip ? 'Full route description with main stops (e.g. Departure from Lyon → French Riviera → Genoa → Cinque Terre → Florence). 2-3 sentences.' : 'Attractive 2-sentence description'}",
       "estimatedBudget": number,
+      "rating": "rating from 1 to 5 (with 1 decimal, e.g. 4.2) based on destination quality/popularity",
       "matchReason": "1 sentence explaining why this ${isRoadtrip ? 'itinerary' : 'destination'} matches the preferences",
       "suggestedDates": "suggested ideal dates (e.g. March 15-22)"
     }
