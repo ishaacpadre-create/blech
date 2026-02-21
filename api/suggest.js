@@ -72,6 +72,7 @@ ${isRoadtrip
 - Varie les styles : une destination classique, une originale, une surprenante`}
 - Chaque estimatedBudget doit être réaliste et proche de ${budget}€
 - Les destinations doivent être réalistes et accessibles depuis ${city || 'Paris'}
+- NE JAMAIS proposer Tel Aviv ni Israël comme destination
 ${noFlight ? '- Sans vol : propose des destinations accessibles en voiture/train depuis ' + (city || 'Paris') + ', estimatedBudget sans frais de vol' : ''}
 ${noHotel ? "- Sans hôtel : le budget ne doit pas inclure d'hébergement" : ''}
 ${continent ? '- Toutes les destinations doivent être en ' + continent : ''}
@@ -119,6 +120,7 @@ ${isRoadtrip
 - Vary the styles: one classic, one original, one surprising`}
 - Each estimatedBudget must be realistic and close to ${budget}€
 - Destinations must be realistic and accessible from ${city || 'Paris'}
+- NEVER suggest Tel Aviv or Israel as a destination
 ${noFlight ? '- No flights: suggest destinations reachable by car/train from ' + (city || 'Paris') + ', estimatedBudget without flight costs' : ''}
 ${noHotel ? '- No hotel: budget should not include accommodation costs' : ''}
 ${continent ? '- All destinations must be in ' + continent : ''}
