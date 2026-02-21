@@ -1353,13 +1353,13 @@ export default function App() {
             <h2 style={{ fontSize: "24px", fontWeight: 700, color: c.text, textAlign: "center", marginBottom: "8px" }}>{t.pickTitle}</h2>
             <p style={{ fontSize: "14px", color: c.textSub, textAlign: "center", marginBottom: "16px", fontWeight: 500 }}>{t.pickSub}</p>
             <div style={{ textAlign: "center", marginBottom: "24px" }}>
-              <button onClick={findSuggestions} style={{
-                background: "transparent", border: `2px solid #FF8C42`, borderRadius: "50px", padding: "10px 24px",
-                color: "#FF8C42", fontSize: "14px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "8px",
-                transition: "all 0.3s",
+              <button onClick={findSuggestions} disabled={loadingSuggestions} style={{
+                background: loadingSuggestions ? "#FF8C42" : "transparent", border: `2px solid #FF8C42`, borderRadius: "50px", padding: "10px 24px",
+                color: loadingSuggestions ? "#fff" : "#FF8C42", fontSize: "14px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "8px",
+                transition: "all 0.3s", cursor: loadingSuggestions ? "wait" : "pointer", opacity: loadingSuggestions ? 0.7 : 1,
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                {t.refresh}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: loadingSuggestions ? "spin 1s linear infinite" : "none" }}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                {loadingSuggestions ? (lang === 'fr' ? "Recherche en cours..." : "Searching...") : t.refresh}
               </button>
             </div>
 
