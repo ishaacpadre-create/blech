@@ -48,7 +48,7 @@ const T = {
     secEssential: "L'essentiel", secWhen: "Quand partir ?", secCustomize: "Personnaliser",
     noFlight: "Sans vol", noHotel: "Sans hôtel",
     continent: "Continent (optionnel)",
-    continents: { any: "Tous", europe: "Europe", asia: "Asie", africa: "Afrique", namerica: "Amérique du Nord", samerica: "Amérique du Sud", oceania: "Océanie" },
+    continents: { any: "Tous", europe: "Europe", asia: "Asie", africa: "Afrique", namerica: "Amérique du Nord", samerica: "Amérique du Sud", latam: "Amérique Latine", oceania: "Océanie" },
     multiDest: "Villes / étapes souhaitées", multiDestPh: "Ex: Rome, Florence, Venise...",
     howTitle: "Comment ça marche",
     howSteps: [
@@ -115,7 +115,7 @@ const T = {
     secEssential: "The essentials", secWhen: "When to go?", secCustomize: "Customize",
     noFlight: "No flights", noHotel: "No hotel",
     continent: "Continent (optional)",
-    continents: { any: "All", europe: "Europe", asia: "Asia", africa: "Africa", namerica: "North America", samerica: "South America", oceania: "Oceania" },
+    continents: { any: "All", europe: "Europe", asia: "Asia", africa: "Africa", namerica: "North America", samerica: "South America", latam: "Latin America", oceania: "Oceania" },
     multiDest: "Cities / stops wanted", multiDestPh: "E.g.: Rome, Florence, Venice...",
     howTitle: "How it works",
     howSteps: [
@@ -450,7 +450,7 @@ export default function App() {
           customNotes,
           noFlight,
           noHotel,
-          continent: continent !== "any" ? continent : undefined,
+          continent: continent !== "any" ? t.continents[continent] : undefined,
           multiDest: multiDest || undefined,
         }),
       });
@@ -500,7 +500,7 @@ export default function App() {
             customNotes,
             noFlight,
             noHotel,
-            continent: continent !== "any" ? continent : undefined,
+            continent: continent !== "any" ? t.continents[continent] : undefined,
             multiDest: multiDest || undefined,
             chosenCity: suggestion.city,
             chosenCountry: suggestion.country,
